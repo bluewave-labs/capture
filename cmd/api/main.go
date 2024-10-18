@@ -3,6 +3,7 @@ package main
 import (
 	"bluewave-uptime-agent/internal/config"
 	"bluewave-uptime-agent/internal/handler"
+	"bluewave-uptime-agent/internal/middleware"
 	"log"
 	"net/http"
 	"os"
@@ -11,9 +12,10 @@ import (
 )
 
 func main() {
-	appConfig := config.NewConfig(os.Getenv("PORT"))
+	appConfig := config.NewConfig(os.Getenv("PORT"), os.Getenv("API_SECRET"), os.Getenv("ALLOW_PUBLIC_API"))
 	r := gin.Default()
 	apiV1 := r.Group("/api/v1")
+	apiV1.Use(middleware.AuthRequired(appConfig.ApiSecret))
 
 	apiV1.GET("/health", handler.Health)
 	apiV1.GET("/metrics", handler.Metrics)
