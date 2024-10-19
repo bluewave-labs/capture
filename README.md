@@ -24,10 +24,10 @@
 
 ```jsonc
 "memory": {
-    "total_bytes":   integer, // Total space in bytes
-    "available":     integer, // WIP
-    "used":          integer, // WIP
-    "usage_percent": float    // WIP
+    "total_bytes":     integer, // Total space in bytes
+    "available_bytes": integer, // WIP
+    "used_bytes":      integer, // WIP
+    "usage_percent":   float    // WIP
 }
 ```
 
