@@ -12,11 +12,12 @@ type Config struct {
 }
 
 var isPublicApiAllowed bool
+var defaultPort = "3000"
 
 func NewConfig(port string, apiSecret string, allowPublicApi string) *Config {
 	// Set default port if not provided
 	if port == "" {
-		port = "3000"
+		port = defaultPort
 	}
 
 	if allowPublicApi == "true" {
@@ -31,5 +32,13 @@ func NewConfig(port string, apiSecret string, allowPublicApi string) *Config {
 		Port:           port,
 		ApiSecret:      apiSecret,
 		AllowPublicApi: isPublicApiAllowed,
+	}
+}
+
+func Default() *Config {
+	return &Config{
+		Port:           defaultPort,
+		ApiSecret:      "",
+		AllowPublicApi: false,
 	}
 }
