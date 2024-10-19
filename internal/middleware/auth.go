@@ -6,10 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var Secret string
-
 func AuthRequired(secret string) gin.HandlerFunc {
-	Secret = secret
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		splittedHeader := strings.Split(authHeader, " ")
@@ -27,7 +24,7 @@ func AuthRequired(secret string) gin.HandlerFunc {
 			c.JSON(401, gin.H{"error": "Authorization token required"})
 			c.Abort()
 			return
-		} else if token != Secret {
+		} else if token != secret {
 			c.JSON(403, gin.H{"error": "Invalid token provided"})
 			c.Abort()
 			return
