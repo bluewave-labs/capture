@@ -25,9 +25,9 @@
 ```jsonc
 "memory": {
     "total_bytes":     integer, // Total space in bytes
-    "available_bytes": integer, // WIP
-    "used_bytes":      integer, // WIP
-    "usage_percent":   float    // WIP
+    "available_bytes": integer, // Available space in bytes
+    "used_bytes":      integer, // Used space in bytes      //* Total - Free - Buffers - Cached
+    "usage_percent":   float    // Usage Percent            //* (Used / Total) * 100.0
 }
 ```
 
@@ -78,9 +78,9 @@
 | Memory          | GNU/Linux | Windows | MacOS     |
 | ----------------|-----------|---------|-----------|
 | Total Bytes     | ✅        | -       | -         |
-| Available Bytes | -         | -       | -         |
-| Used Bytes      | -         | -       | -         |
-| Usage Percent   | -         | -       | -         |
+| Available Bytes | ✅        | -       | -         |
+| Used Bytes      | ✅        | -       | -         |
+| Usage Percent   | ✅        | -       | -         |
 
 | Disk          | GNU/Linux | Windows | MacOS     |
 | --------------|-----------|---------|-----------|
