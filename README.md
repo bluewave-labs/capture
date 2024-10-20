@@ -1,13 +1,19 @@
 # BlueWave Uptime Agent
 
-<details>
-<summary>API Metrics Response</summary>
+## API Responses
 
-<details>
-<summary>CPU Response</summary>
+| Endpoint          | Method | Description                                          |
+|-------------------|--------|------------------------------------------------------|
+| `/metrics`        | GET    | Returns the all system metrics(cpu,memory,disk,host) |
+| `/metrics/cpu`    | GET    | Returns the system cpu metrics                       |
+| `/metrics/memory` | GET    | Returns the system memory metrics                    |
+| `/metrics/disk`   | GET    | Returns the system disk metrics                      |
+| `/metrics/host`   | GET    | Returns the system host informations                 |
+
+### CPU Response
 
 ```jsonc
-"cpu": {
+{
     "physical_core": integer, // Physical cores
     "logical_core":  integer, // Logical cores aka Threads
     "frequency":     integer, // Frequency in mHz
@@ -17,13 +23,10 @@
 }
 ```
 
-</details>
-
-<details>
-<summary>Memory Response</summary>
+### Memory Response
 
 ```jsonc
-"memory": {
+{
     "total_bytes":     integer, // Total space in bytes
     "available_bytes": integer, // Available space in bytes
     "used_bytes":      integer, // Used space in bytes      //* Total - Free - Buffers - Cached
@@ -31,13 +34,10 @@
 }
 ```
 
-</details>
-
-<details>
-<summary>Disk Response</summary>
+### Disk Response
 
 ```jsonc
-"disk":{
+{
     "read_speed_bytes":  integer, // WIP
     "write_speed_bytes": integer, // WIP
     "total_bytes":       integer, // Total space of "/" in bytes
@@ -46,25 +46,17 @@
 }
 ```
 
-</details>
-
-<details>
-<summary>Host Response</summary>
+### Host Response
 
 ```jsonc
-"host":{
+{
     "os":             string, // linux, darwin, windows
     "platform":       string, // arch, debian, suse...
     "kernel_version": string, // 6.10.10, 6.0.0, 6.10.0-zen...
 }
 ```
 
-</details>
-
-</details>
-
-<details>
-<summary>Availability</summary>
+## Availability
 
 | CPU                 | GNU/Linux | Windows | MacOS     |
 | --------------------|-----------|---------|-----------|
@@ -93,5 +85,3 @@
 | OS             | ✅        | -       | -         |
 | Platform       | ✅        | -       | -         |
 | Kernel Version | ✅        | -       | -         |
-
-</details>
