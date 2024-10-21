@@ -50,7 +50,7 @@ func TestHostLinux(t *testing.T) {
 		t.FailNow()
 	}
 
-	assert.Equal(t, *info.Os, runtime.GOOS)
-	assert.Equal(t, *info.Platform, strings.TrimSuffix(osPlatform, "\n"))
-	assert.Equal(t, *info.KernelVersion, strings.TrimSuffix(osKernel, "\n"))
+	assert.Equal(t, info.Os, runtime.GOOS)
+	assert.Equal(t, info.Platform, strings.TrimSuffix(osPlatform, "\n"))
+	assert.Equal(t, info.KernelVersion, strings.TrimSuffix(osKernel, "\n"))
 }

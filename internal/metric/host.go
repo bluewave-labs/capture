@@ -5,9 +5,9 @@ import (
 )
 
 type HostData struct {
-	Os            *string `json:"os"`             // Operating System
-	Platform      *string `json:"platform"`       // Platform Name
-	KernelVersion *string `json:"kernel_version"` // Kernel Version
+	Os            string `json:"os"`             // Operating System
+	Platform      string `json:"platform"`       // Platform Name
+	KernelVersion string `json:"kernel_version"` // Kernel Version
 }
 
 func GetHostInformation() (*HostData, error) {
@@ -18,8 +18,8 @@ func GetHostInformation() (*HostData, error) {
 	}
 
 	return &HostData{
-		Os:            &info.OS,
-		Platform:      &info.Platform,
-		KernelVersion: &info.KernelVersion,
+		Os:            info.OS,
+		Platform:      info.Platform,
+		KernelVersion: info.KernelVersion,
 	}, nil
 }
