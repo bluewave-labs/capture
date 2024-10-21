@@ -1,10 +1,10 @@
 package metric
 
 type ApiResponse struct {
-	Cpu    CpuData    `json:"cpu"`
-	Memory MemoryData `json:"memory"`
-	Disk   DiskData   `json:"disk"`
-	Host   HostData   `json:"host"`
+	Cpu    CpuData     `json:"cpu"`
+	Memory MemoryData  `json:"memory"`
+	Disk   []*DiskData `json:"disk"`
+	Host   HostData    `json:"host"`
 }
 
 func GetAllSystemMetrics() (*ApiResponse, error) {
@@ -32,7 +32,7 @@ func GetAllSystemMetrics() (*ApiResponse, error) {
 	return &ApiResponse{
 		Cpu:    *cpu,
 		Memory: *memory,
-		Disk:   *disk,
+		Disk:   disk,
 		Host:   *host,
 	}, nil
 }
