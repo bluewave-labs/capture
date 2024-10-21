@@ -47,7 +47,7 @@ func CollectCpuMetrics() (*CpuData, error) {
 		LogicalCore:  cpuLogicalCoreCount,
 		Frequency:    cpuInformation[0].Mhz,
 		Temperature:  cpuTemp,
-		FreePercent:  nil, //TODO: Implement
-		UsagePercent: nil, //TODO: Implement
+		FreePercent:  nil, // TODO: Implement
+		UsagePercent: nil, // TODO: Implement
 	}, nil
 }
