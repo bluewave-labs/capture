@@ -2,13 +2,15 @@
 
 ## API Responses
 
-| Endpoint          | Method | Description                                          |
-|-------------------|--------|------------------------------------------------------|
-| `/metrics`        | GET    | Returns the all system metrics(cpu,memory,disk,host) |
-| `/metrics/cpu`    | GET    | Returns the system cpu metrics                       |
-| `/metrics/memory` | GET    | Returns the system memory metrics                    |
-| `/metrics/disk`   | GET    | Returns the system disk metrics                      |
-| `/metrics/host`   | GET    | Returns the system host informations                 |
+| Endpoint          | Method | Description                                                                   |
+|-------------------|--------|-------------------------------------------------------------------------------|
+| `/health`         | GET    | Returns 200 OK                                                                |
+| `/metrics`        | GET    | Returns the all system metrics(cpu,memory,disk,host)                          |
+| `/metrics/cpu`    | GET    | Returns the system cpu metrics                                                |
+| `/metrics/memory` | GET    | Returns the system memory metrics                                             |
+| `/metrics/disk`   | GET    | Returns the system disk metrics                                               |
+| `/metrics/host`   | GET    | Returns the system host informations                                          |
+| `/ws/metrics`     | GET    | Returns the all system metrics(cpu,memory,disk,host) in every n seconds (n=2) |
 
 ### CPU Response
 
