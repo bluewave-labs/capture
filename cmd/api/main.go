@@ -11,15 +11,29 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var appConfig = config.NewConfig(
+	os.Getenv("PORT"),
+	os.Getenv("API_SECRET"),
+	os.Getenv("ALLOW_PUBLIC_API"),
+)
+
 func main() {
-	appConfig := config.NewConfig(os.Getenv("PORT"), os.Getenv("API_SECRET"), os.Getenv("ALLOW_PUBLIC_API"))
 	r := gin.Default()
 	apiV1 := r.Group("/api/v1")
 	apiV1.Use(middleware.AuthRequired(appConfig.ApiSecret))
 
+	// Health Check
 	apiV1.GET("/health", handler.Health)
+
+	// Metrics
 	apiV1.GET("/metrics", handler.Metrics)
-	apiV1.GET("/ws", handler.WebSocket)
+	apiV1.GET("/metrics/cpu", handler.MetricsCPU)
+	apiV1.GET("/metrics/memory", handler.MetricsMemory)
+	apiV1.GET("/metrics/disk", handler.MetricsDisk)
+	apiV1.GET("/metrics/host", handler.MetricsHost)
+
+	// WebSocket Connection
+	apiV1.GET("/ws/metrics", handler.WebSocket)
 
 	server := &http.Server{
 		Addr:    ":" + appConfig.Port,
