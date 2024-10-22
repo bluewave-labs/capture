@@ -19,9 +19,9 @@
     "physical_core": integer, // Physical cores
     "logical_core":  integer, // Logical cores aka Threads
     "frequency":     integer, // Frequency in mHz
-    "temperature":   null,    // WIP
-    "free_percent":  null,    // WIP
-    "usage_percent": null     // WIP
+    "temperature":   float,   // Temperature in Celsius     
+    "free_percent":  float,   // Free percentage           //* 1- Usage
+    "usage_percent": float    // Usage percentage          //* Total - Idle / Total
 }
 ```
 
@@ -39,13 +39,15 @@
 ### Disk Response
 
 ```jsonc
-{
-    "read_speed_bytes":  integer, // WIP
-    "write_speed_bytes": integer, // WIP
-    "total_bytes":       integer, // Total space of "/" in bytes
-    "free_bytes":        integer, // WIP
-    "usage_percent":     float    // WIP
-}
+[
+    {
+        "read_speed_bytes":  integer, // WIP
+        "write_speed_bytes": integer, // WIP
+        "total_bytes":       integer, // Total space of "/" in bytes
+        "free_bytes":        integer, // Free space of "/" in bytes
+        "usage_percent":     float    // Usage Percent of "/"
+    }
+]
 ```
 
 ### Host Response

@@ -4,14 +4,6 @@ import (
 	disk2 "github.com/shirou/gopsutil/v4/disk"
 )
 
-type DiskData struct {
-	ReadSpeedBytes  *uint64  `json:"read_speed_bytes"`  // TODO: Implement
-	WriteSpeedBytes *uint64  `json:"write_speed_bytes"` // TODO: Implement
-	TotalBytes      *uint64  `json:"total_bytes"`       // Total space of "/" in bytes
-	FreeBytes       *uint64  `json:"free_bytes"`        // Free space of "/" in bytes
-	UsagePercent    *float64 `json:"usage_percent"`     // Usage Percent of "/"
-}
-
 func CollectDiskMetrics() ([]*DiskData, error) {
 	var diskData []*DiskData
 	diskUsage, diskUsageErr := disk2.Usage("/")

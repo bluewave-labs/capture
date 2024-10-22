@@ -6,15 +6,6 @@ import (
 	"github.com/shirou/gopsutil/v4/cpu"
 )
 
-type CpuData struct {
-	PhysicalCore int      `json:"physical_core"` // Physical cores
-	LogicalCore  int      `json:"logical_core"`  // Logical cores aka Threads
-	Frequency    float64  `json:"frequency"`     // Frequency in mHz
-	Temperature  *float32 `json:"temperauture"`  // Temperature in Celsius (nil if not available)
-	FreePercent  float64  `json:"free_percent"`  // Free percentage  //* 1 - (Total - Idle / Total)
-	UsagePercent float64  `json:"usage_percent"` // Usage percentage //* Total - Idle / Total
-}
-
 func CollectCpuMetrics() (*CpuData, error) {
 	// Collect CPU Core Counts
 	cpuPhysicalCoreCount, cpuPhysicalErr := cpu.Counts(false)
