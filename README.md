@@ -89,3 +89,69 @@
 | OS             | ✅        | -       | -         |
 | Platform       | ✅        | -       | -         |
 | Kernel Version | ✅        | -       | -         |
+
+## Requirements
+
+- [Go](https://go.dev/dl/)
+- [Just](https://github.com/casey/just)
+
+## Set Up Guide
+
+1. Git Clone
+
+    ```shell
+    git clone REPO_LINK
+    ```
+
+2. Change your directory
+
+    ```shell
+    cd bluewave-uptime-agent
+    ```
+
+3. Install dependencies
+
+    ```shell
+    go mod download
+    ```
+
+4. Build the project
+
+    ```shell
+    just build
+    ```
+
+    or
+
+    ```shell
+    go build -o bwuagent ./cmd/api/
+    ```
+
+5. Run the project
+
+    ```shell
+    ./bwuagent
+    ```
+
+    or
+
+    ```shell
+    go run ./cmd/api/
+    ```
+
+6. Environment Variables
+
+    If you want to change the port, api secret or allow public api, you can use this environment variables.
+
+    ```shell
+    PORT = your_port
+    API_SECRET = your_secret
+    ALLOW_PUBLIC_API = true/false
+    GIN_MODE = release/debug
+    ```
+
+    Usage:
+
+    ```shell
+    PORT=8080 API_SECRET=your_secret ALLOW_PUBLIC_API=true GIN_MODE=release ./bwuagent
+    ```
