@@ -1,6 +1,8 @@
 package metric
 
 import (
+	"bluewave-uptime-agent/internal/sysfs"
+
 	"github.com/shirou/gopsutil/v4/cpu"
 )
 
@@ -42,12 +44,19 @@ func CollectCpuMetrics() (*CpuData, error) {
 	// 	return nil, cpuTempErr
 	// }
 
+	cpuCurrentFrequency, cpuCurFreqErr := sysfs.CpuCurrentFrequency()
+
+	if cpuCurFreqErr != nil {
+		return nil, cpuCurFreqErr
+	}
+
 	return &CpuData{
-		PhysicalCore: cpuPhysicalCoreCount,
-		LogicalCore:  cpuLogicalCoreCount,
-		Frequency:    cpuInformation[0].Mhz,
-		Temperature:  nil,
-		FreePercent:  1 - cpuUsagePercent,
-		UsagePercent: cpuUsagePercent,
+		PhysicalCore:     cpuPhysicalCoreCount,
+		LogicalCore:      cpuLogicalCoreCount,
+		Frequency:        cpuInformation[0].Mhz,
+		CurrentFrequency: cpuCurrentFrequency,
+		Temperature:      nil,
+		FreePercent:      1 - cpuUsagePercent,
+		UsagePercent:     cpuUsagePercent,
 	}, nil
 }

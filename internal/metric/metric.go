@@ -8,12 +8,13 @@ type ApiResponse struct {
 }
 
 type CpuData struct {
-	PhysicalCore int      `json:"physical_core"` // Physical cores
-	LogicalCore  int      `json:"logical_core"`  // Logical cores aka Threads
-	Frequency    float64  `json:"frequency"`     // Frequency in mHz
-	Temperature  *float32 `json:"temperauture"`  // Temperature in Celsius (nil if not available)
-	FreePercent  float64  `json:"free_percent"`  // Free percentage                               //* 1 - (Total - Idle / Total)
-	UsagePercent float64  `json:"usage_percent"` // Usage percentage                              //* Total - Idle / Total
+	PhysicalCore     int      `json:"physical_core"`     // Physical cores
+	LogicalCore      int      `json:"logical_core"`      // Logical cores aka Threads
+	Frequency        float64  `json:"frequency"`         // Frequency in mHz
+	CurrentFrequency int      `json:"current_frequency"` // Current Frequency in mHz
+	Temperature      *float32 `json:"temperauture"`      // Temperature in Celsius (nil if not available)
+	FreePercent      float64  `json:"free_percent"`      // Free percentage                               //* 1 - (Total - Idle / Total)
+	UsagePercent     float64  `json:"usage_percent"`     // Usage percentage                              //* Total - Idle / Total
 }
 
 type MemoryData struct {
