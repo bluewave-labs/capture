@@ -67,9 +67,9 @@
 | Physical Core Count | ✅        | -       | -         |
 | Logical Core Count  | ✅        | -       | -         |
 | Frequency           | ✅        | -       | -         |
-| Temperature         | -         | -       | -         |
-| Free Percent        | -         | -       | -         |
-| Usage Percent       | -         | -       | -         |
+| Temperature         | ✅        | -       | -         |
+| Free Percent        | ✅        | -       | -         |
+| Usage Percent       | ✅        | -       | -         |
 
 | Memory          | GNU/Linux | Windows | MacOS     |
 | ----------------|-----------|---------|-----------|
@@ -78,11 +78,13 @@
 | Used Bytes      | ✅        | -       | -         |
 | Usage Percent   | ✅        | -       | -         |
 
-| Disk          | GNU/Linux | Windows | MacOS     |
-| --------------|-----------|---------|-----------|
-| Total Bytes   | -         | -       | -         |
-| Free Bytes    | -         | -       | -         |
-| Usage Percent | -         | -       | -         |
+| Disk               | GNU/Linux | Windows | MacOS     |
+| -------------------|-----------|---------|-----------|
+| Read Speed  Bytes  | -         | -       | -         |
+| Write Speed Byres  | -         | -       | -         |
+| Total Bytes        | ✅        | -       | -         |
+| Free Bytes         | ✅        | -       | -         |
+| Usage Percent      | ✅        | -       | -         |
 
 | Host           | GNU/Linux | Windows | MacOS     |
 | ---------------|-----------|---------|-----------|
