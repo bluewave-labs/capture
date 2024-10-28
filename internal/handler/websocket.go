@@ -11,7 +11,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var interval = 2 * time.Second
+var interval = 5 * time.Second
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
