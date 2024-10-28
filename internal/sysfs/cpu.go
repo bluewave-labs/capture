@@ -22,3 +22,21 @@ func CpuTemperature() (*float32, error) {
 	var temp_float = float32(temp) / 1000
 	return &temp_float, nil
 }
+
+func CpuCurrentFrequency() (int, error) {
+	frequency, cpuFrequencyError := ShellExec("cat /sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq")
+
+	if cpuFrequencyError != nil {
+		return 0, cpuFrequencyError
+	}
+
+	frequency = strings.TrimSuffix(frequency, "\n")
+	freq, strConvErr := strconv.Atoi(frequency)
+
+	if strConvErr != nil {
+		return 0, strConvErr
+	}
+
+	// Convert frequency to mHz
+	return freq / 1000, nil
+}
