@@ -16,12 +16,13 @@
 
 ```jsonc
 {
-    "physical_core": integer, // Physical cores
-    "logical_core":  integer, // Logical cores aka Threads
-    "frequency":     integer, // Frequency in mHz
-    "temperature":   float,   // Temperature in Celsius     
-    "free_percent":  float,   // Free percentage           //* 1- Usage
-    "usage_percent": float    // Usage percentage          //* Total - Idle / Total
+    "physical_core":     integer, // Physical cores
+    "logical_core":      integer, // Logical cores aka Threads
+    "frequency":         integer, // Frequency in mHz
+    "current_frequency": integer, // Current Frequency in mHz
+    "temperature":       float,   // Temperature in Celsius     
+    "free_percent":      float,   // Free percentage           //* 1- Usage
+    "usage_percent":     float    // Usage percentage          //* Total - Idle / Total
 }
 ```
 
@@ -67,6 +68,7 @@
 | Physical Core Count | ✅        | -       | -         |
 | Logical Core Count  | ✅        | -       | -         |
 | Frequency           | ✅        | -       | -         |
+| Current Frequency   | ✅        | -       | -         |
 | Temperature         | ✅        | -       | -         |
 | Free Percent        | ✅        | -       | -         |
 | Usage Percent       | ✅        | -       | -         |
