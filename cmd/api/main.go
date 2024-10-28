@@ -4,9 +4,13 @@ import (
 	"bluewave-uptime-agent/internal/config"
 	"bluewave-uptime-agent/internal/handler"
 	"bluewave-uptime-agent/internal/middleware"
+	"context"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -40,9 +44,25 @@ func main() {
 		Handler: r.Handler(),
 	}
 
-	// TODO: Add graceful shutdown
-	serve(server)
+	// Graceful shutdown
+	go serve(server)
 
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("shutdown server ...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatal("server shutdown:", err)
+	}
+	select {
+	case <-ctx.Done():
+		log.Println("timeout of 5 seconds.")
+	}
+	log.Println("server exiting")
 }
 
 func serve(srv *http.Server) {
