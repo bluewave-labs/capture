@@ -5,12 +5,22 @@ import (
 )
 
 func CollectDiskMetrics() ([]*DiskData, []string) {
+	defaultDiskData := []*DiskData{
+		{
+			ReadSpeedBytes:  nil,
+			WriteSpeedBytes: nil,
+			TotalBytes:      nil,
+			FreeBytes:       nil,
+			UsagePercent:    nil,
+		},
+	}
 	var diskData []*DiskData
 	var diskErrors []string
 	diskUsage, diskUsageErr := disk2.Usage("/")
 
 	if diskUsageErr != nil {
 		diskErrors = append(diskErrors, diskUsageErr.Error())
+		return defaultDiskData, diskErrors
 	}
 
 	// diskMetrics, diskErr := disk1.Get()
