@@ -6,7 +6,7 @@ import (
 
 func GetHostInformation() (*HostData, []string) {
 	var hostErrors []string
-	defaultHostData := &HostData{
+	defaultHostData := HostData{
 		Os:            "unknown",
 		Platform:      "unknown",
 		KernelVersion: "unknown",
@@ -15,7 +15,7 @@ func GetHostInformation() (*HostData, []string) {
 
 	if infoErr != nil {
 		hostErrors = append(hostErrors, infoErr.Error())
-		return defaultHostData, hostErrors
+		return &defaultHostData, hostErrors
 	}
 
 	return &HostData{

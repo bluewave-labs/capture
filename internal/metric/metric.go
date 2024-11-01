@@ -1,10 +1,11 @@
 package metric
 
 type ApiResponse struct {
-	Cpu    CpuData     `json:"cpu"`
-	Memory MemoryData  `json:"memory"`
-	Disk   []*DiskData `json:"disk"`
-	Host   HostData    `json:"host"`
+	Cpu    *CpuData     `json:"cpu"`
+	Memory *MemoryData  `json:"memory"`
+	Disk   *[]*DiskData `json:"disk"`
+	Host   *HostData    `json:"host"`
+	Errors []string     `json:"errors"`
 }
 
 type CpuData struct {
@@ -38,7 +39,7 @@ type HostData struct {
 	KernelVersion string `json:"kernel_version"` // Kernel Version
 }
 
-func GetAllSystemMetrics() (*ApiResponse, []string) {
+func GetAllSystemMetrics() *ApiResponse {
 	cpu, cpuErr := CollectCpuMetrics()
 	memory, memErr := CollectMemoryMetrics()
 	disk, diskErr := CollectDiskMetrics()
@@ -63,9 +64,10 @@ func GetAllSystemMetrics() (*ApiResponse, []string) {
 	}
 
 	return &ApiResponse{
-		Cpu:    *cpu,
-		Memory: *memory,
+		Cpu:    cpu,
+		Memory: memory,
 		Disk:   disk,
-		Host:   *host,
-	}, errors
+		Host:   host,
+		Errors: errors,
+	}
 }
