@@ -4,12 +4,13 @@ import (
 	disk2 "github.com/shirou/gopsutil/v4/disk"
 )
 
-func CollectDiskMetrics() ([]*DiskData, error) {
+func CollectDiskMetrics() ([]*DiskData, []string) {
 	var diskData []*DiskData
+	var diskErrors []string
 	diskUsage, diskUsageErr := disk2.Usage("/")
 
 	if diskUsageErr != nil {
-		return nil, diskUsageErr
+		diskErrors = append(diskErrors, diskUsageErr.Error())
 	}
 
 	// diskMetrics, diskErr := disk1.Get()
@@ -30,7 +31,7 @@ func CollectDiskMetrics() ([]*DiskData, error) {
 		UsagePercent:    RoundFloatPtr(diskUsage.UsedPercent/100, 4),
 	})
 
-	return diskSlice, nil
+	return diskSlice, diskErrors
 }
 
 // func CollectDiskMetricsTrial() (map[string]disk2.IOCountersStat, error) {

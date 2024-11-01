@@ -38,26 +38,28 @@ type HostData struct {
 	KernelVersion string `json:"kernel_version"` // Kernel Version
 }
 
-func GetAllSystemMetrics() (*ApiResponse, error) {
+func GetAllSystemMetrics() (*ApiResponse, []string) {
 	cpu, cpuErr := CollectCpuMetrics()
 	memory, memErr := CollectMemoryMetrics()
 	disk, diskErr := CollectDiskMetrics()
 	host, hostErr := GetHostInformation()
 
+	var errors []string
+
 	if cpuErr != nil {
-		return nil, cpuErr
+		errors = append(errors, cpuErr...)
 	}
 
 	if memErr != nil {
-		return nil, memErr
+		errors = append(errors, memErr...)
 	}
 
 	if diskErr != nil {
-		return nil, diskErr
+		errors = append(errors, diskErr...)
 	}
 
 	if hostErr != nil {
-		return nil, hostErr
+		errors = append(errors, hostErr...)
 	}
 
 	return &ApiResponse{
@@ -65,5 +67,5 @@ func GetAllSystemMetrics() (*ApiResponse, error) {
 		Memory: *memory,
 		Disk:   disk,
 		Host:   *host,
-	}, nil
+	}, errors
 }

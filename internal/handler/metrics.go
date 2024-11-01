@@ -6,57 +6,57 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Metrics(c *gin.Context) {
-	metrics, metricsErr := metric.GetAllSystemMetrics()
-	if metricsErr != nil {
-		c.JSON(500, "Unable to get metrics")
-		return
-	}
+type HttpResponse struct {
+	Data   interface{} `json:"metrics"`
+	Errors []string
+}
 
-	c.JSON(200, metrics)
+func Metrics(c *gin.Context) {
+	metrics, metricsErrs := metric.GetAllSystemMetrics()
+	response := HttpResponse{
+		Data:   metrics,
+		Errors: metricsErrs,
+	}
+	c.JSON(200, response)
 	return
 }
 
 func MetricsCPU(c *gin.Context) {
-	metrics, metricsErr := metric.CollectCpuMetrics()
-	if metricsErr != nil {
-		c.JSON(500, "Unable to get metrics")
-		return
+	metrics, metricsErrs := metric.CollectCpuMetrics()
+	response := HttpResponse{
+		Data:   metrics,
+		Errors: metricsErrs,
 	}
-
-	c.JSON(200, metrics)
+	c.JSON(200, response)
 	return
 }
 
 func MetricsMemory(c *gin.Context) {
-	metrics, metricsErr := metric.CollectMemoryMetrics()
-	if metricsErr != nil {
-		c.JSON(500, "Unable to get metrics")
-		return
+	metrics, metricsErrs := metric.CollectMemoryMetrics()
+	response := HttpResponse{
+		Data:   metrics,
+		Errors: metricsErrs,
 	}
-
-	c.JSON(200, metrics)
+	c.JSON(200, response)
 	return
 }
 
 func MetricsDisk(c *gin.Context) {
-	metrics, metricsErr := metric.CollectDiskMetrics()
-	if metricsErr != nil {
-		c.JSON(500, "Unable to get metrics")
-		return
+	metrics, metricsErrs := metric.CollectDiskMetrics()
+	response := HttpResponse{
+		Data:   metrics,
+		Errors: metricsErrs,
 	}
-
-	c.JSON(200, metrics)
+	c.JSON(200, response)
 	return
 }
 
 func MetricsHost(c *gin.Context) {
-	metrics, metricsErr := metric.GetHostInformation()
-	if metricsErr != nil {
-		c.JSON(500, "Unable to get metrics")
-		return
+	metrics, metricsErrs := metric.GetHostInformation()
+	response := HttpResponse{
+		Data:   metrics,
+		Errors: metricsErrs,
 	}
-
-	c.JSON(200, metrics)
+	c.JSON(200, response)
 	return
 }
