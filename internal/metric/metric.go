@@ -1,11 +1,20 @@
 package metric
 
 type ApiResponse struct {
-	Cpu    *CpuData     `json:"cpu"`
-	Memory *MemoryData  `json:"memory"`
+	Data   interface{} `json:"data"` // TODO: Update it with a new interface
+	Errors []CustomErr `json:"errors"`
+}
+
+type AllMetrics struct {
+	Cpu    CpuData      `json:"cpu"`
+	Memory MemoryData   `json:"memory"`
 	Disk   *[]*DiskData `json:"disk"`
-	Host   *HostData    `json:"host"`
-	Errors []string     `json:"errors"`
+	Host   HostData     `json:"host"`
+}
+
+type CustomErr struct {
+	Metric []string `json:"metric"`
+	Error  string   `json:"err"`
 }
 
 type CpuData struct {
@@ -45,7 +54,7 @@ func GetAllSystemMetrics() *ApiResponse {
 	disk, diskErr := CollectDiskMetrics()
 	host, hostErr := GetHostInformation()
 
-	var errors []string
+	var errors []CustomErr
 
 	if cpuErr != nil {
 		errors = append(errors, cpuErr...)
@@ -64,10 +73,12 @@ func GetAllSystemMetrics() *ApiResponse {
 	}
 
 	return &ApiResponse{
-		Cpu:    cpu,
-		Memory: memory,
-		Disk:   disk,
-		Host:   host,
+		Data: AllMetrics{
+			Cpu:    *cpu,
+			Memory: *memory,
+			Disk:   disk,
+			Host:   *host,
+		},
 		Errors: errors,
 	}
 }
