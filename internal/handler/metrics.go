@@ -40,7 +40,6 @@ func MetricsDisk(c *gin.Context) {
 	}
 	c.JSON(200, apiResponse)
 	return
-	return
 }
 
 func MetricsHost(c *gin.Context) {
@@ -50,6 +49,5 @@ func MetricsHost(c *gin.Context) {
 		Errors: metricsErrs,
 	}
 	c.JSON(200, apiResponse)
-	return
 	return
 }
