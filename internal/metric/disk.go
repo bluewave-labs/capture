@@ -4,7 +4,7 @@ import (
 	disk2 "github.com/shirou/gopsutil/v4/disk"
 )
 
-func CollectDiskMetrics() (*[]*DiskData, []string) {
+func CollectDiskMetrics() (*[]*DiskData, []CustomErr) {
 	defaultDiskData := []*DiskData{
 		{
 			ReadSpeedBytes:  nil,
@@ -15,11 +15,15 @@ func CollectDiskMetrics() (*[]*DiskData, []string) {
 		},
 	}
 	var diskData []*DiskData
-	var diskErrors []string
+	var diskErrors []CustomErr
 	diskUsage, diskUsageErr := disk2.Usage("/")
 
 	if diskUsageErr != nil {
-		diskErrors = append(diskErrors, diskUsageErr.Error())
+
+		diskErrors = append(diskErrors, CustomErr{
+			Metric: []string{"disk.usage_percent", "disk.total_bytes", "disk.free_bytes"},
+			Error:  diskUsageErr.Error(),
+		})
 		return &defaultDiskData, diskErrors
 	}
 
