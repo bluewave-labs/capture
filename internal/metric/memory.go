@@ -4,8 +4,8 @@ import (
 	"github.com/shirou/gopsutil/v4/mem"
 )
 
-func CollectMemoryMetrics() (*MemoryData, []string) {
-	var memErrors []string
+func CollectMemoryMetrics() (*MemoryData, []CustomErr) {
+	var memErrors []CustomErr
 	defaultMemoryData := &MemoryData{
 		TotalBytes:     0,
 		AvailableBytes: 0,
@@ -15,7 +15,10 @@ func CollectMemoryMetrics() (*MemoryData, []string) {
 	vMem, vMemErr := mem.VirtualMemory()
 
 	if vMemErr != nil {
-		memErrors = append(memErrors, vMemErr.Error())
+		memErrors = append(memErrors, CustomErr{
+			Metric: []string{"memory.total_bytes", "memory.available_bytes", "memory.used_bytes", "memory.usage_percent"},
+			Error:  vMemErr.Error(),
+		})
 		return defaultMemoryData, memErrors
 	}
 
