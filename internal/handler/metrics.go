@@ -7,56 +7,47 @@ import (
 )
 
 func Metrics(c *gin.Context) {
-	metrics, metricsErr := metric.GetAllSystemMetrics()
-	if metricsErr != nil {
-		c.JSON(500, "Unable to get metrics")
-		return
-	}
-
+	metrics := metric.GetAllSystemMetrics()
 	c.JSON(200, metrics)
 	return
 }
 
 func MetricsCPU(c *gin.Context) {
-	metrics, metricsErr := metric.CollectCpuMetrics()
-	if metricsErr != nil {
-		c.JSON(500, "Unable to get metrics")
-		return
-	}
+	cpuMetrics, metricsErrs := metric.CollectCpuMetrics()
 
-	c.JSON(200, metrics)
+	c.JSON(200, metric.ApiResponse{
+		Data:   cpuMetrics,
+		Errors: metricsErrs,
+	})
 	return
 }
 
 func MetricsMemory(c *gin.Context) {
-	metrics, metricsErr := metric.CollectMemoryMetrics()
-	if metricsErr != nil {
-		c.JSON(500, "Unable to get metrics")
-		return
-	}
+	memoryMetrics, metricsErrs := metric.CollectMemoryMetrics()
 
-	c.JSON(200, metrics)
+	c.JSON(200, metric.ApiResponse{
+		Data:   memoryMetrics,
+		Errors: metricsErrs,
+	})
 	return
 }
 
 func MetricsDisk(c *gin.Context) {
-	metrics, metricsErr := metric.CollectDiskMetrics()
-	if metricsErr != nil {
-		c.JSON(500, "Unable to get metrics")
-		return
-	}
+	diskMetrics, metricsErrs := metric.CollectDiskMetrics()
 
-	c.JSON(200, metrics)
+	c.JSON(200, metric.ApiResponse{
+		Data:   diskMetrics,
+		Errors: metricsErrs,
+	})
 	return
 }
 
 func MetricsHost(c *gin.Context) {
-	metrics, metricsErr := metric.GetHostInformation()
-	if metricsErr != nil {
-		c.JSON(500, "Unable to get metrics")
-		return
-	}
+	hostMetrics, metricsErrs := metric.GetHostInformation()
 
-	c.JSON(200, metrics)
+	c.JSON(200, metric.ApiResponse{
+		Data:   hostMetrics,
+		Errors: metricsErrs,
+	})
 	return
 }
