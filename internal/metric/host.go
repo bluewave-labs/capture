@@ -4,8 +4,8 @@ import (
 	"github.com/shirou/gopsutil/v4/host"
 )
 
-func GetHostInformation() (*HostData, []string) {
-	var hostErrors []string
+func GetHostInformation() (*HostData, []CustomErr) {
+	var hostErrors []CustomErr
 	defaultHostData := HostData{
 		Os:            "unknown",
 		Platform:      "unknown",
@@ -14,7 +14,10 @@ func GetHostInformation() (*HostData, []string) {
 	info, infoErr := host.Info()
 
 	if infoErr != nil {
-		hostErrors = append(hostErrors, infoErr.Error())
+		hostErrors = append(hostErrors, CustomErr{
+			Metric: []string{"host.os", "host.platform", "host.kernel_version"},
+			Error:  infoErr.Error(),
+		})
 		return &defaultHostData, hostErrors
 	}
 
