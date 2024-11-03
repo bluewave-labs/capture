@@ -2,22 +2,29 @@ package metric
 
 import (
 	"bluewave-uptime-agent/internal/sysfs"
+
 	"github.com/shirou/gopsutil/v4/cpu"
 )
 
-func CollectCpuMetrics() (*CpuData, []string) {
+func CollectCpuMetrics() (*CpuData, []CustomErr) {
 	// Collect CPU Core Counts
 	cpuPhysicalCoreCount, cpuPhysicalErr := cpu.Counts(false)
 	cpuLogicalCoreCount, cpuLogicalErr := cpu.Counts(true)
 
-	var cpuErrors []string
+	var cpuErrors []CustomErr
 	if cpuPhysicalErr != nil {
-		cpuErrors = append(cpuErrors, cpuPhysicalErr.Error())
+		cpuErrors = append(cpuErrors, CustomErr{
+			Metric: []string{"cpu.physical_core"},
+			Error:  cpuPhysicalErr.Error(),
+		})
 		cpuPhysicalCoreCount = 0
 	}
 
 	if cpuLogicalErr != nil {
-		cpuErrors = append(cpuErrors, cpuLogicalErr.Error())
+		cpuErrors = append(cpuErrors, CustomErr{
+			Metric: []string{"cpu.logical_core"},
+			Error:  cpuLogicalErr.Error(),
+		})
 		cpuLogicalCoreCount = 0
 	}
 
@@ -25,7 +32,10 @@ func CollectCpuMetrics() (*CpuData, []string) {
 	cpuInformation, cpuInfoErr := cpu.Info()
 	var cpuFrequency float64
 	if cpuInfoErr != nil {
-		cpuErrors = append(cpuErrors, cpuInfoErr.Error())
+		cpuErrors = append(cpuErrors, CustomErr{
+			Metric: []string{"cpu.frequency"},
+			Error:  cpuInfoErr.Error(),
+		})
 		cpuFrequency = 0
 	} else {
 		cpuFrequency = cpuInformation[0].Mhz
@@ -36,7 +46,10 @@ func CollectCpuMetrics() (*CpuData, []string) {
 	var cpuUsagePercent float64
 
 	if cpuTimesErr != nil {
-		cpuErrors = append(cpuErrors, cpuTimesErr.Error())
+		cpuErrors = append(cpuErrors, CustomErr{
+			Metric: []string{"cpu.usage_percent"},
+			Error:  cpuTimesErr.Error(),
+		})
 		cpuUsagePercent = 0
 	} else {
 		// Calculate CPU Usage Percentage
@@ -45,15 +58,21 @@ func CollectCpuMetrics() (*CpuData, []string) {
 	}
 
 	// Collect CPU Temperature from sysfs
-	// cpuTemp, cpuTempErr := sysfs.CpuTemperature()
+	cpuTemp, cpuTempErr := sysfs.CpuTemperature()
 
-	// if cpuTempErr != nil {
-	// 	return nil, cpuTempErr
-	// }
+	if cpuTempErr != nil {
+		cpuErrors = append(cpuErrors, CustomErr{
+			Metric: []string{"cpu.temperature"},
+			Error:  cpuTempErr.Error(),
+		})
+	}
 
 	cpuCurrentFrequency, cpuCurFreqErr := sysfs.CpuCurrentFrequency()
 	if cpuCurFreqErr != nil {
-		cpuErrors = append(cpuErrors, cpuCurFreqErr.Error())
+		cpuErrors = append(cpuErrors, CustomErr{
+			Metric: []string{"cpu.current_frequency"},
+			Error:  cpuCurFreqErr.Error(),
+		})
 		cpuCurrentFrequency = 0
 	}
 
@@ -62,7 +81,7 @@ func CollectCpuMetrics() (*CpuData, []string) {
 		LogicalCore:      cpuLogicalCoreCount,
 		Frequency:        cpuFrequency,
 		CurrentFrequency: cpuCurrentFrequency,
-		Temperature:      nil,
+		Temperature:      cpuTemp,
 		FreePercent:      1 - cpuUsagePercent,
 		UsagePercent:     cpuUsagePercent,
 	}, cpuErrors
