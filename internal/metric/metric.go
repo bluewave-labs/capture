@@ -1,16 +1,26 @@
 package metric
 
+type MetricsSlice []Metric
+
+func (m MetricsSlice) isMetric() {}
+
+type Metric interface {
+	isMetric()
+}
+
 type ApiResponse struct {
-	Data   interface{} `json:"data"` // TODO: Update it with a new interface
+	Data   Metric      `json:"data"` // TODO: Update it with a new interface
 	Errors []CustomErr `json:"errors"`
 }
 
 type AllMetrics struct {
 	Cpu    CpuData      `json:"cpu"`
 	Memory MemoryData   `json:"memory"`
-	Disk   *[]*DiskData `json:"disk"`
+	Disk   MetricsSlice `json:"disk"`
 	Host   HostData     `json:"host"`
 }
+
+func (a AllMetrics) isMetric() {}
 
 type CustomErr struct {
 	Metric []string `json:"metric"`
@@ -27,12 +37,16 @@ type CpuData struct {
 	UsagePercent     float64  `json:"usage_percent"`     // Usage percentage                              //* Total - Idle / Total
 }
 
+func (c CpuData) isMetric() {}
+
 type MemoryData struct {
 	TotalBytes     uint64   `json:"total_bytes"`     // Total space in bytes
 	AvailableBytes uint64   `json:"available_bytes"` // Available space in bytes
 	UsedBytes      uint64   `json:"used_bytes"`      // Used space in bytes      //* Total - Free - Buffers - Cached
 	UsagePercent   *float64 `json:"usage_percent"`   // Usage Percent            //* (Used / Total) * 100.0
 }
+
+func (m MemoryData) isMetric() {}
 
 type DiskData struct {
 	ReadSpeedBytes  *uint64  `json:"read_speed_bytes"`  // TODO: Implement
@@ -42,11 +56,15 @@ type DiskData struct {
 	UsagePercent    *float64 `json:"usage_percent"`     // Usage Percent of "/"
 }
 
+func (d DiskData) isMetric() {}
+
 type HostData struct {
 	Os            string `json:"os"`             // Operating System
 	Platform      string `json:"platform"`       // Platform Name
 	KernelVersion string `json:"kernel_version"` // Kernel Version
 }
+
+func (h HostData) isMetric() {}
 
 func GetAllSystemMetrics() *ApiResponse {
 	cpu, cpuErr := CollectCpuMetrics()
