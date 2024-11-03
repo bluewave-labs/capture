@@ -13,41 +13,41 @@ func Metrics(c *gin.Context) {
 }
 
 func MetricsCPU(c *gin.Context) {
-	metrics, metricsErrs := metric.CollectCpuMetrics()
-	apiResponse := metric.ApiResponse{
-		Cpu:    metrics,
+	cpuMetrics, metricsErrs := metric.CollectCpuMetrics()
+
+	c.JSON(200, metric.ApiResponse{
+		Data:   cpuMetrics,
 		Errors: metricsErrs,
-	}
-	c.JSON(200, apiResponse)
+	})
 	return
 }
 
 func MetricsMemory(c *gin.Context) {
-	metrics, metricsErrs := metric.CollectMemoryMetrics()
-	apiResponse := metric.ApiResponse{
-		Memory: metrics,
+	memoryMetrics, metricsErrs := metric.CollectMemoryMetrics()
+
+	c.JSON(200, metric.ApiResponse{
+		Data:   memoryMetrics,
 		Errors: metricsErrs,
-	}
-	c.JSON(200, apiResponse)
+	})
 	return
 }
 
 func MetricsDisk(c *gin.Context) {
-	metrics, metricsErrs := metric.CollectDiskMetrics()
-	apiResponse := metric.ApiResponse{
-		Disk:   metrics,
+	diskMetrics, metricsErrs := metric.CollectDiskMetrics()
+
+	c.JSON(200, metric.ApiResponse{
+		Data:   diskMetrics,
 		Errors: metricsErrs,
-	}
-	c.JSON(200, apiResponse)
+	})
 	return
 }
 
 func MetricsHost(c *gin.Context) {
-	metrics, metricsErrs := metric.GetHostInformation()
-	apiResponse := metric.ApiResponse{
-		Host:   metrics,
+	hostMetrics, metricsErrs := metric.GetHostInformation()
+
+	c.JSON(200, metric.ApiResponse{
+		Data:   hostMetrics,
 		Errors: metricsErrs,
-	}
-	c.JSON(200, apiResponse)
+	})
 	return
 }
