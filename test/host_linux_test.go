@@ -1,12 +1,12 @@
 package test
 
 import (
-	"bluewave-uptime-agent/internal/metric"
-	"bluewave-uptime-agent/internal/sysfs"
 	"runtime"
 	"strings"
 	"testing"
 
+	"github.com/bluewave-labs/bluewave-uptime-agent/internal/metric"
+	"github.com/bluewave-labs/bluewave-uptime-agent/internal/sysfs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,8 +18,8 @@ func TestHostLinux(t *testing.T) {
 	osKernel, osKernelErr := sysfs.ShellExec("uname -r")     // Kernel version
 	info, infoErr := metric.GetHostInformation()
 
-	if infoErr != nil {
-		t.Error(infoErr.Error())
+	if len(infoErr) != 0 {
+		t.Error(infoErr)
 		t.FailNow()
 	}
 

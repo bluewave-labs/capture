@@ -10,7 +10,7 @@ test:
 	@go test \
 		-v \
 		-timeout 30s \
-		bluewave-uptime-agent/test
+		github.com/bluewave-labs/bluewave-uptime-agent/test
 
 build:
     @go build -o bwuagent ./cmd/api/
