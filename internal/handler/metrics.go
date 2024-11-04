@@ -6,48 +6,39 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Metrics(c *gin.Context) {
-	metrics := metric.GetAllSystemMetrics()
-	c.JSON(200, metrics)
+func handleMetricResponse(c *gin.Context, metrics metric.Metric, errs []metric.CustomErr) {
+	statusCode := 200
+	if len(errs) > 0 {
+		statusCode = 207
+	}
+	c.JSON(statusCode, metric.ApiResponse{
+		Data:   metrics,
+		Errors: errs,
+	})
 	return
+}
+
+func Metrics(c *gin.Context) {
+	metrics, metricsErrs := metric.GetAllSystemMetrics()
+	handleMetricResponse(c, metrics, metricsErrs)
 }
 
 func MetricsCPU(c *gin.Context) {
 	cpuMetrics, metricsErrs := metric.CollectCpuMetrics()
-
-	c.JSON(200, metric.ApiResponse{
-		Data:   cpuMetrics,
-		Errors: metricsErrs,
-	})
-	return
+	handleMetricResponse(c, cpuMetrics, metricsErrs)
 }
 
 func MetricsMemory(c *gin.Context) {
 	memoryMetrics, metricsErrs := metric.CollectMemoryMetrics()
-
-	c.JSON(200, metric.ApiResponse{
-		Data:   memoryMetrics,
-		Errors: metricsErrs,
-	})
-	return
+	handleMetricResponse(c, memoryMetrics, metricsErrs)
 }
 
 func MetricsDisk(c *gin.Context) {
 	diskMetrics, metricsErrs := metric.CollectDiskMetrics()
-
-	c.JSON(200, metric.ApiResponse{
-		Data:   diskMetrics,
-		Errors: metricsErrs,
-	})
-	return
+	handleMetricResponse(c, diskMetrics, metricsErrs)
 }
 
 func MetricsHost(c *gin.Context) {
 	hostMetrics, metricsErrs := metric.GetHostInformation()
-
-	c.JSON(200, metric.ApiResponse{
-		Data:   hostMetrics,
-		Errors: metricsErrs,
-	})
-	return
+	handleMetricResponse(c, hostMetrics, metricsErrs)
 }
