@@ -52,12 +52,12 @@ func WebSocket(c *gin.Context) {
 
 	// Streaming messages to the client
 	for {
-		metrics := metric.GetAllSystemMetrics()
-		//if metricsErr != nil {
-		//	log.Printf("[FAIL] | Failed to get system metrics: %v", metricsErr)
-		//	c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get system metrics"})
-		//	return
-		//}
+		metrics, metricsErr := metric.GetAllSystemMetrics()
+		if metricsErr != nil {
+			log.Printf("[FAIL] | Failed to get system metrics: %v", metricsErr)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get system metrics"})
+			return
+		}
 		data, dataErr := json.Marshal(metrics)
 		if dataErr != nil {
 			log.Printf("[FAIL] | Failed to marshal system metrics: %v", dataErr)
