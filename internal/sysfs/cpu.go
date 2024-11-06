@@ -44,7 +44,8 @@ func CpuTemperature() ([]float32, error) {
 			if label, err := os.ReadFile(labelPath); err == nil {
 				labelStr := strings.ToLower(strings.TrimSpace(string(label)))
 				// Only process if it's a core
-				if strings.Contains(labelStr, "core") {
+				// * tctl is the temperature control value for AMD processors. We should also consider it as a core temperature.
+				if strings.Contains(labelStr, "core") || strings.Contains(labelStr, "tctl") {
 					if temp, err := readTempFile(path); err == nil {
 						temps = append(temps, temp)
 					}
