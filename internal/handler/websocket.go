@@ -1,12 +1,12 @@
 package handler
 
 import (
-	"bluewave-uptime-agent/internal/metric"
 	"encoding/json"
 	"log"
 	"net/http"
 	"time"
 
+	"github.com/bluewave-labs/bluewave-uptime-agent/internal/metric"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )

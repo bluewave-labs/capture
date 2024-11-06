@@ -1,8 +1,7 @@
 package metric
 
 import (
-	"bluewave-uptime-agent/internal/sysfs"
-
+	"github.com/bluewave-labs/bluewave-uptime-agent/internal/sysfs"
 	"github.com/shirou/gopsutil/v4/cpu"
 )
 
