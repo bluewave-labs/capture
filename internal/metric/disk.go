@@ -4,12 +4,25 @@ import (
 	disk2 "github.com/shirou/gopsutil/v4/disk"
 )
 
-func CollectDiskMetrics() ([]*DiskData, error) {
-	var diskData []*DiskData
+func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
+	defaultDiskData := []*DiskData{
+		{
+			ReadSpeedBytes:  nil,
+			WriteSpeedBytes: nil,
+			TotalBytes:      nil,
+			FreeBytes:       nil,
+			UsagePercent:    nil,
+		},
+	}
+	var diskErrors []CustomErr
 	diskUsage, diskUsageErr := disk2.Usage("/")
 
 	if diskUsageErr != nil {
-		return nil, diskUsageErr
+		diskErrors = append(diskErrors, CustomErr{
+			Metric: []string{"disk.usage_percent", "disk.total_bytes", "disk.free_bytes"},
+			Error:  diskUsageErr.Error(),
+		})
+		return MetricsSlice{defaultDiskData[0]}, diskErrors
 	}
 
 	// diskMetrics, diskErr := disk1.Get()
@@ -22,15 +35,16 @@ func CollectDiskMetrics() ([]*DiskData, error) {
 	// }
 
 	// var a uint64 = 2e+12
-	diskSlice := append(diskData, &DiskData{
+	var metricsSlice MetricsSlice
+
+	metricsSlice = append(metricsSlice, &DiskData{
 		ReadSpeedBytes:  nil, // TODO: Implement
 		WriteSpeedBytes: nil, // TODO: Implement
 		TotalBytes:      &diskUsage.Total,
 		FreeBytes:       &diskUsage.Free,
 		UsagePercent:    RoundFloatPtr(diskUsage.UsedPercent/100, 4),
 	})
-
-	return diskSlice, nil
+	return metricsSlice, diskErrors
 }
 
 // func CollectDiskMetricsTrial() (map[string]disk2.IOCountersStat, error) {

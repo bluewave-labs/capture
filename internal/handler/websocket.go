@@ -1,12 +1,12 @@
 package handler
 
 import (
-	"bluewave-uptime-agent/internal/metric"
 	"encoding/json"
 	"log"
 	"net/http"
 	"time"
 
+	"github.com/bluewave-labs/bluewave-uptime-agent/internal/metric"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -52,12 +52,12 @@ func WebSocket(c *gin.Context) {
 
 	// Streaming messages to the client
 	for {
-		metrics, metricsErr := metric.GetAllSystemMetrics()
-		if metricsErr != nil {
-			log.Printf("[FAIL] | Failed to get system metrics: %v", metricsErr)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get system metrics"})
-			return
-		}
+		metrics := metric.GetAllSystemMetrics()
+		//if metricsErr != nil {
+		//	log.Printf("[FAIL] | Failed to get system metrics: %v", metricsErr)
+		//	c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get system metrics"})
+		//	return
+		//}
 		data, dataErr := json.Marshal(metrics)
 		if dataErr != nil {
 			log.Printf("[FAIL] | Failed to marshal system metrics: %v", dataErr)

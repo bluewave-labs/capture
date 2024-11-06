@@ -1,9 +1,6 @@
 package main
 
 import (
-	"bluewave-uptime-agent/internal/config"
-	"bluewave-uptime-agent/internal/handler"
-	"bluewave-uptime-agent/internal/middleware"
 	"context"
 	"log"
 	"net/http"
@@ -12,6 +9,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/bluewave-labs/bluewave-uptime-agent/internal/config"
+	"github.com/bluewave-labs/bluewave-uptime-agent/internal/handler"
+	"github.com/bluewave-labs/bluewave-uptime-agent/internal/middleware"
 	"github.com/gin-gonic/gin"
 )
 
