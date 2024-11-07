@@ -53,7 +53,15 @@ func CollectCpuMetrics() (*CpuData, []CustomErr) {
 	} else {
 		// Calculate CPU Usage Percentage
 		total := cpuTimes[0].User + cpuTimes[0].Nice + cpuTimes[0].System + cpuTimes[0].Idle + cpuTimes[0].Iowait + cpuTimes[0].Irq + cpuTimes[0].Softirq + cpuTimes[0].Steal + cpuTimes[0].Guest + cpuTimes[0].GuestNice
-		cpuUsagePercent = (total - (cpuTimes[0].Idle + cpuTimes[0].Iowait)) / total
+		if total > 0 {
+			cpuUsagePercent = (total - (cpuTimes[0].Idle + cpuTimes[0].Iowait)) / total
+		} else {
+			cpuUsagePercent = 0
+			cpuErrors = append(cpuErrors, CustomErr{
+				Metric: []string{"cpu.usage_percent"},
+				Error:  "total CPU time is zero",
+			})
+		}
 	}
 
 	// Collect CPU Temperature from sysfs
@@ -64,6 +72,7 @@ func CollectCpuMetrics() (*CpuData, []CustomErr) {
 			Metric: []string{"cpu.temperature"},
 			Error:  cpuTempErr.Error(),
 		})
+		cpuTemp = 0
 	}
 
 	cpuCurrentFrequency, cpuCurFreqErr := sysfs.CpuCurrentFrequency()

@@ -9,7 +9,7 @@ type Metric interface {
 }
 
 type ApiResponse struct {
-	Data   Metric      `json:"data"` // TODO: Update it with a new interface
+	Data   Metric      `json:"data"`
 	Errors []CustomErr `json:"errors"`
 }
 
@@ -66,7 +66,7 @@ type HostData struct {
 
 func (h HostData) isMetric() {}
 
-func GetAllSystemMetrics() *ApiResponse {
+func GetAllSystemMetrics() (AllMetrics, []CustomErr) {
 	cpu, cpuErr := CollectCpuMetrics()
 	memory, memErr := CollectMemoryMetrics()
 	disk, diskErr := CollectDiskMetrics()
@@ -90,13 +90,10 @@ func GetAllSystemMetrics() *ApiResponse {
 		errors = append(errors, hostErr...)
 	}
 
-	return &ApiResponse{
-		Data: AllMetrics{
-			Cpu:    *cpu,
-			Memory: *memory,
-			Disk:   disk,
-			Host:   *host,
-		},
-		Errors: errors,
-	}
+	return AllMetrics{
+		Cpu:    *cpu,
+		Memory: *memory,
+		Disk:   disk,
+		Host:   *host,
+	}, errors
 }
