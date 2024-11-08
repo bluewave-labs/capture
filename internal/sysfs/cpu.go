@@ -54,7 +54,10 @@ func CpuTemperature() ([]float32, error) {
 		}
 	}
 
-	return temps, errors.New("unable to read CPU temperature")
+	if len(temps) == 0 {
+		return nil, errors.New("unable to read CPU temperature")
+	}
+	return temps, nil
 }
 
 func CpuCurrentFrequency() (int, error) {
