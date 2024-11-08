@@ -22,6 +22,20 @@ func readTempFile(path string) (float32, error) {
 	return float32(temp) / 1000, nil
 }
 
+func readCpuFreqFile(path string) (int, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return 0, err
+	}
+
+	freq, err := strconv.Atoi(strings.TrimSpace(string(data)))
+	if err != nil {
+		return 0, err
+	}
+
+	return freq, nil
+}
+
 func CpuTemperature() ([]float32, error) {
 	// Look in all these folders for core temp
 	corePaths := []string{
@@ -61,19 +75,12 @@ func CpuTemperature() ([]float32, error) {
 }
 
 func CpuCurrentFrequency() (int, error) {
-	frequency, cpuFrequencyError := ShellExec("cat /sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq")
+	frequency, cpuFrequencyError := readCpuFreqFile("/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq")
 
 	if cpuFrequencyError != nil {
 		return 0, cpuFrequencyError
 	}
 
-	frequency = strings.TrimSuffix(frequency, "\n")
-	freq, strConvErr := strconv.Atoi(frequency)
-
-	if strConvErr != nil {
-		return 0, strConvErr
-	}
-
 	// Convert frequency to mHz
-	return freq / 1000, nil
+	return frequency / 1000, nil
 }
