@@ -72,7 +72,7 @@ func CollectCpuMetrics() (*CpuData, []CustomErr) {
 			Metric: []string{"cpu.temperature"},
 			Error:  cpuTempErr.Error(),
 		})
-		cpuTemp = 0
+		cpuTemp = nil
 	}
 
 	cpuCurrentFrequency, cpuCurFreqErr := sysfs.CpuCurrentFrequency()
