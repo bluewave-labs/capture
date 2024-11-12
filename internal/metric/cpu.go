@@ -90,7 +90,7 @@ func CollectCpuMetrics() (*CpuData, []CustomErr) {
 		Frequency:        cpuFrequency,
 		CurrentFrequency: cpuCurrentFrequency,
 		Temperature:      cpuTemp,
-		FreePercent:      1 - cpuUsagePercent,
-		UsagePercent:     cpuUsagePercent,
+		FreePercent:      *RoundFloatPtr(1-cpuUsagePercent, 4),
+		UsagePercent:     *RoundFloatPtr(cpuUsagePercent, 4),
 	}, cpuErrors
 }
