@@ -1,0 +1,36 @@
+version: 2
+project_name: bwuagent
+
+builds:
+  - id: bwuagent
+    main: ./cmd/api
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      # Support multiple cpu architectures
+      - amd64
+      - arm64
+    ignore:
+      # Ignore the arm64 build on windows
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  # Generate checksum files to confirm the integrity of the files.
+  # `sha256sum <file>`
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+changelog:
+  sort: asc
