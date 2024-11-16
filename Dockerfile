@@ -2,7 +2,7 @@
 FROM golang:1.23.1-alpine AS builder
 COPY . /app
 # Change directory and build the binary. Build command is also used to download the dependencies.
-RUN cd /app && go build ./cmd/bwuagent
+RUN cd /app && go build -o bwuagent ./cmd/bwuagent
 
 FROM chainguard/static:latest-glibc
 COPY --from=builder /app/bwuagent /usr/bin/

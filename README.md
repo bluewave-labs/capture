@@ -128,7 +128,7 @@
     or
 
     ```shell
-    go build ./cmd/bwuagent/
+    go build -o bwuagent ./cmd/bwuagent/
     ```
 
 5. Run the project
