@@ -8,8 +8,9 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
-      - windows
-      - darwin
+      # Disable windows and darwin builds for now, because the app is not working on these platforms
+      # - windows
+      # - darwin
     goarch:
       # Support multiple cpu architectures
       - amd64
