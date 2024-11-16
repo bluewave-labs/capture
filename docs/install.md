@@ -23,6 +23,12 @@ BlueWave Uptime Agent currently only available for **Linux**. You can install th
 
 ## Manual Installation
 
+### Requirements
+
+- [Git](https://git-scm.com/downloads) is essential for cloning the repository.
+- [Go](https://go.dev/dl/) is required to build the project.
+- [Just](https://github.com/casey/just) is optional but **recommended** for building the project with pre-defined commands.
+
 ### Build from Source
 
 1. Git Clone
