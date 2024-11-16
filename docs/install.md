@@ -99,9 +99,9 @@ bwuagent
 
 ## Environment Variables
 
-| ENV Variable Name | Required/Optional | Type      | Description                         | Accepted Values |
-|-------------------|-------------------|-----------|-------------------------------------|-----------------|
-| PORT              | Optional          | `integer` | Specifies Port for Server           | 0 - 65535       |
-| API_SECRET        | Required          | `string`  | API Secret                          | Any string      |
-| ALLOW_PUBLIC_API  | Optional          | `boolean` | Allow or deny publicly avaiable api | true, false     |
-| GIN_MODE          | Optional          | `string`  | Gin mode                            | debug, release  |
+| ENV Variable Name | Required/Optional | Type      | Default Value                          | Description                          | Accepted Values |
+|-------------------|-------------------|-----------| ---------------------------------------|--------------------------------------|-----------------|
+| PORT              | Optional          | `integer` | 59232                                  | Specifies Port for Server            | 0 - 65535       |
+| API_SECRET        | Required          | `string`  | -                                      | API Secret                           | Any string      |
+| ALLOW_PUBLIC_API  | Optional          | `boolean` | false                                  | Allow or deny publicly available api | true, false     |
+| GIN_MODE          | Optional          | `string`  | system -> debug <br> docker -> release | Gin mode                             | debug, release  |
