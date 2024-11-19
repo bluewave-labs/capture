@@ -128,7 +128,7 @@
     or
 
     ```shell
-    go build -o bwuagent ./cmd/api/
+    go build -o bwuagent ./cmd/bwuagent/
     ```
 
 5. Run the project
@@ -140,7 +140,7 @@
     or
 
     ```shell
-    go run ./cmd/api/
+    go run ./cmd/bwuagent/
     ```
 
 6. Environment Variables
