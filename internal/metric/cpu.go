@@ -3,6 +3,7 @@ package metric
 import (
 	"github.com/bluewave-labs/bluewave-uptime-agent/internal/sysfs"
 	"github.com/shirou/gopsutil/v4/cpu"
+	"time"
 )
 
 func CollectCpuMetrics() (*CpuData, []CustomErr) {
@@ -41,27 +42,20 @@ func CollectCpuMetrics() (*CpuData, []CustomErr) {
 	}
 
 	// Collect CPU Usage
-	cpuTimes, cpuTimesErr := cpu.Times(false)
 	var cpuUsagePercent float64
 
-	if cpuTimesErr != nil {
+	// Percent calculates the percentage of cpu used either per CPU or combined.
+	// If an interval of 0 is given it will compare the current cpu times against the last call
+	// Returns one value per cpu, or a single value if percpu is set to false.
+	cpuPercents, cpuPercentsErr := cpu.Percent(time.Second, false)
+	if cpuPercentsErr != nil {
 		cpuErrors = append(cpuErrors, CustomErr{
 			Metric: []string{"cpu.usage_percent"},
-			Error:  cpuTimesErr.Error(),
+			Error:  cpuPercentsErr.Error(),
 		})
 		cpuUsagePercent = 0
 	} else {
-		// Calculate CPU Usage Percentage
-		total := cpuTimes[0].User + cpuTimes[0].Nice + cpuTimes[0].System + cpuTimes[0].Idle + cpuTimes[0].Iowait + cpuTimes[0].Irq + cpuTimes[0].Softirq + cpuTimes[0].Steal + cpuTimes[0].Guest + cpuTimes[0].GuestNice
-		if total > 0 {
-			cpuUsagePercent = (total - (cpuTimes[0].Idle + cpuTimes[0].Iowait)) / total
-		} else {
-			cpuUsagePercent = 0
-			cpuErrors = append(cpuErrors, CustomErr{
-				Metric: []string{"cpu.usage_percent"},
-				Error:  "total CPU time is zero",
-			})
-		}
+		cpuUsagePercent = cpuPercents[0] / 100.0
 	}
 
 	// Collect CPU Temperature from sysfs
