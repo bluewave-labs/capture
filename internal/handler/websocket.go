@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/bluewave-labs/bluewave-uptime-agent/internal/metric"
+	"github.com/bluewave-labs/capture/internal/metric"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
