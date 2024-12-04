@@ -1,12 +1,13 @@
 package metric
 
 import (
-	disk2 "github.com/shirou/gopsutil/v4/disk"
+	"github.com/shirou/gopsutil/v4/disk"
 )
 
 func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 	defaultDiskData := []*DiskData{
 		{
+			MountPoint:      "",
 			ReadSpeedBytes:  nil,
 			WriteSpeedBytes: nil,
 			TotalBytes:      nil,
@@ -15,35 +16,40 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 		},
 	}
 	var diskErrors []CustomErr
-	diskUsage, diskUsageErr := disk2.Usage("/")
-
-	if diskUsageErr != nil {
-		diskErrors = append(diskErrors, CustomErr{
-			Metric: []string{"disk.usage_percent", "disk.total_bytes", "disk.free_bytes"},
-			Error:  diskUsageErr.Error(),
-		})
-		return MetricsSlice{defaultDiskData[0]}, diskErrors
-	}
-
-	// diskMetrics, diskErr := disk1.Get()
-	// if diskErr != nil {
-	// 	log.Fatalf("Unable to get disk metrics")
-	// }
-
-	// for _, p := range diskMetrics {
-	// 	fmt.Println(p.Name, p.ReadsCompleted)
-	// }
-
-	// var a uint64 = 2e+12
 	var metricsSlice MetricsSlice
 
-	metricsSlice = append(metricsSlice, &DiskData{
-		ReadSpeedBytes:  nil, // TODO: Implement
-		WriteSpeedBytes: nil, // TODO: Implement
-		TotalBytes:      &diskUsage.Total,
-		FreeBytes:       &diskUsage.Free,
-		UsagePercent:    RoundFloatPtr(diskUsage.UsedPercent/100, 4),
-	})
+	// Set all flag to false to get only necessary partitions
+	// Avoiding unnecessary partitions like /run/user/1000, /run/credentials
+	partitions, partErr := disk.Partitions(false)
+
+	if partErr != nil {
+		diskErrors = append(diskErrors, CustomErr{
+			Metric: []string{"disk.partitions"},
+			Error:  partErr.Error(),
+		})
+	}
+
+	for _, p := range partitions {
+		diskUsage, diskUsageErr := disk.Usage(p.Mountpoint)
+
+		if diskUsageErr != nil {
+			diskErrors = append(diskErrors, CustomErr{
+				Metric: []string{"disk.usage_percent", "disk.total_bytes", "disk.free_bytes"},
+				Error:  diskUsageErr.Error() + p.Mountpoint,
+			})
+			return MetricsSlice{defaultDiskData[0]}, diskErrors
+		}
+
+		metricsSlice = append(metricsSlice, &DiskData{
+			MountPoint:      diskUsage.Path,
+			ReadSpeedBytes:  nil, // TODO: Implement
+			WriteSpeedBytes: nil, // TODO: Implement
+			TotalBytes:      &diskUsage.Total,
+			FreeBytes:       &diskUsage.Free,
+			UsagePercent:    RoundFloatPtr(diskUsage.UsedPercent/100, 4),
+		})
+	}
+
 	return metricsSlice, diskErrors
 }
 
