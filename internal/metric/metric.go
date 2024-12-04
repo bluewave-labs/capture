@@ -49,11 +49,12 @@ type MemoryData struct {
 func (m MemoryData) isMetric() {}
 
 type DiskData struct {
+	MountPoint      string   `json:"mount_point"`       // Mount Point
 	ReadSpeedBytes  *uint64  `json:"read_speed_bytes"`  // TODO: Implement
 	WriteSpeedBytes *uint64  `json:"write_speed_bytes"` // TODO: Implement
-	TotalBytes      *uint64  `json:"total_bytes"`       // Total space of "/" in bytes
-	FreeBytes       *uint64  `json:"free_bytes"`        // Free space of "/" in bytes
-	UsagePercent    *float64 `json:"usage_percent"`     // Usage Percent of "/"
+	TotalBytes      *uint64  `json:"total_bytes"`       // Total space of mounted partition in bytes
+	FreeBytes       *uint64  `json:"free_bytes"`        // Free space of mounted partition  in bytes
+	UsagePercent    *float64 `json:"usage_percent"`     // Usage Percent of mounted partition 
 }
 
 func (d DiskData) isMetric() {}
