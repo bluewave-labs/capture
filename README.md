@@ -112,7 +112,7 @@ Capture is a set of tools running on the server and providing information about 
 2. Change your directory
 
     ```shell
-    cd bluewave-uptime-agent
+    cd capture
     ```
 
 3. Install dependencies
@@ -130,19 +130,19 @@ Capture is a set of tools running on the server and providing information about 
     or
 
     ```shell
-    go build -o bwuagent ./cmd/bwuagent/
+    go build -o capture ./cmd/capture/
     ```
 
 5. Run the project
 
     ```shell
-    ./bwuagent
+    ./capture
     ```
 
     or
 
     ```shell
-    go run ./cmd/bwuagent/
+    go run ./cmd/capture/
     ```
 
 6. Environment Variables
@@ -159,5 +159,5 @@ Capture is a set of tools running on the server and providing information about 
     Usage:
 
     ```shell
-    PORT=8080 API_SECRET=your_secret ALLOW_PUBLIC_API=true GIN_MODE=release ./bwuagent
+    PORT=8080 API_SECRET=your_secret ALLOW_PUBLIC_API=true GIN_MODE=release ./capture
     ```

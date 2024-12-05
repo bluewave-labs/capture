@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/bluewave-labs/bluewave-uptime-agent/internal/config"
-	"github.com/bluewave-labs/bluewave-uptime-agent/internal/handler"
-	"github.com/bluewave-labs/bluewave-uptime-agent/internal/middleware"
+	"github.com/bluewave-labs/capture/internal/config"
+	"github.com/bluewave-labs/capture/internal/handler"
+	"github.com/bluewave-labs/capture/internal/middleware"
 	"github.com/gin-gonic/gin"
 )
 

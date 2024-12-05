@@ -1,9 +1,10 @@
 package metric
 
 import (
-	"github.com/bluewave-labs/bluewave-uptime-agent/internal/sysfs"
-	"github.com/shirou/gopsutil/v4/cpu"
 	"time"
+
+	"github.com/bluewave-labs/capture/internal/sysfs"
+	"github.com/shirou/gopsutil/v4/cpu"
 )
 
 func CollectCpuMetrics() (*CpuData, []CustomErr) {

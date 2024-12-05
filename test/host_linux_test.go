@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bluewave-labs/bluewave-uptime-agent/internal/metric"
-	"github.com/bluewave-labs/bluewave-uptime-agent/internal/sysfs"
+	"github.com/bluewave-labs/capture/internal/metric"
+	"github.com/bluewave-labs/capture/internal/sysfs"
 	"github.com/stretchr/testify/assert"
 )
 
