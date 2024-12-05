@@ -1,4 +1,6 @@
-# BlueWave Uptime Agent
+# Capture: Checkmate agent
+
+Capture is a set of tools running on the server and providing information about underlying hardware to the [Checkmate](https://github.com/bluewave-labs/checkmate) server.
 
 ## API Responses
 
