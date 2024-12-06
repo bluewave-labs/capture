@@ -147,7 +147,7 @@ Capture is a set of tools running on the server and providing information about 
 
 6. Environment Variables
 
-    If you want to change port or the api secret you can use this environment variables.
+    If you want to change the port or the API secret, you can use these environment variables:
 
     ```shell
     PORT = your_port
@@ -158,5 +158,9 @@ Capture is a set of tools running on the server and providing information about 
     Usage:
 
     ```shell
+    # API_SECRET is required
     PORT=8080 API_SECRET=your_secret GIN_MODE=release ./capture
+
+    # Minimal required configuration
+    API_SECRET=your_secret ./capture
     ```
