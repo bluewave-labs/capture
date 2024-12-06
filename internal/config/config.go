@@ -1,44 +1,34 @@
 package config
 
-import (
-	"errors"
-	"log"
-)
+import "log"
 
 type Config struct {
-	Port           string
-	ApiSecret      string
-	AllowPublicApi bool
+	Port      string
+	ApiSecret string
 }
 
-var isPublicApiAllowed bool
 var defaultPort = "59232"
 
-func NewConfig(port string, apiSecret string, allowPublicApi string) *Config {
+func NewConfig(port string, apiSecret string) *Config {
 	// Set default port if not provided
 	if port == "" {
 		port = defaultPort
 	}
 
-	if allowPublicApi == "true" {
-		isPublicApiAllowed = true
-	} else if allowPublicApi == "false" || allowPublicApi == "" {
-		isPublicApiAllowed = false
-	} else {
-		log.Panic(errors.New("Invalid bool value on AllowPublicApi"))
+	// Print error message if API_SECRET is not provided
+	if apiSecret == "" {
+		log.Fatalln("API_SECRET is required")
 	}
 
 	return &Config{
-		Port:           port,
-		ApiSecret:      apiSecret,
-		AllowPublicApi: isPublicApiAllowed,
+		Port:      port,
+		ApiSecret: apiSecret,
 	}
 }
 
 func Default() *Config {
 	return &Config{
-		Port:           defaultPort,
-		ApiSecret:      "",
-		AllowPublicApi: false,
+		Port:      defaultPort,
+		ApiSecret: "",
 	}
 }

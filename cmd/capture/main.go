@@ -18,7 +18,6 @@ import (
 var appConfig = config.NewConfig(
 	os.Getenv("PORT"),
 	os.Getenv("API_SECRET"),
-	os.Getenv("ALLOW_PUBLIC_API"),
 )
 
 func main() {
