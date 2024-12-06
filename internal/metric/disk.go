@@ -1,13 +1,16 @@
 package metric
 
 import (
+	"slices"
+	"strings"
+
 	"github.com/shirou/gopsutil/v4/disk"
 )
 
 func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 	defaultDiskData := []*DiskData{
 		{
-			MountPoint:      "",
+			Device:          "",
 			ReadSpeedBytes:  nil,
 			WriteSpeedBytes: nil,
 			TotalBytes:      nil,
@@ -17,8 +20,9 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 	}
 	var diskErrors []CustomErr
 	var metricsSlice MetricsSlice
+	var checkedSlice []string // To keep track of checked partitions
 
-	// Set all flag to false to get only necessary partitions
+	// Set all flag to "false" to get only necessary partitions
 	// Avoiding unnecessary partitions like /run/user/1000, /run/credentials
 	partitions, partErr := disk.Partitions(false)
 
@@ -30,24 +34,33 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 	}
 
 	for _, p := range partitions {
-		diskUsage, diskUsageErr := disk.Usage(p.Mountpoint)
+		// Filter out partitions that are already checked or not a device
+		if slices.Contains(checkedSlice, p.Device) || !strings.HasPrefix(p.Device, "/dev") {
+			continue
+		}
 
+		diskUsage, diskUsageErr := disk.Usage(p.Mountpoint)
 		if diskUsageErr != nil {
 			diskErrors = append(diskErrors, CustomErr{
 				Metric: []string{"disk.usage_percent", "disk.total_bytes", "disk.free_bytes"},
-				Error:  diskUsageErr.Error() + p.Mountpoint,
+				Error:  diskUsageErr.Error() + " " + p.Mountpoint,
 			})
-			return MetricsSlice{defaultDiskData[0]}, diskErrors
+			continue
 		}
 
+		checkedSlice = append(checkedSlice, p.Device)
 		metricsSlice = append(metricsSlice, &DiskData{
-			MountPoint:      diskUsage.Path,
+			Device:          p.Device,
 			ReadSpeedBytes:  nil, // TODO: Implement
 			WriteSpeedBytes: nil, // TODO: Implement
 			TotalBytes:      &diskUsage.Total,
 			FreeBytes:       &diskUsage.Free,
 			UsagePercent:    RoundFloatPtr(diskUsage.UsedPercent/100, 4),
 		})
+	}
+
+	if len(diskErrors) != 0 {
+		return MetricsSlice{defaultDiskData[0]}, diskErrors
 	}
 
 	return metricsSlice, diskErrors
