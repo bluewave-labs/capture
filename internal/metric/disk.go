@@ -10,7 +10,7 @@ import (
 func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 	defaultDiskData := []*DiskData{
 		{
-			Device:          "",
+			Device:          "unknown",
 			ReadSpeedBytes:  nil,
 			WriteSpeedBytes: nil,
 			TotalBytes:      nil,
@@ -59,7 +59,11 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 		})
 	}
 
-	if len(diskErrors) != 0 {
+	if len(diskErrors) == 0 {
+		return metricsSlice, nil
+	}
+
+	if len(metricsSlice) == 0 {
 		return MetricsSlice{defaultDiskData[0]}, diskErrors
 	}
 
