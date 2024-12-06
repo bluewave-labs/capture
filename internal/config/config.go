@@ -17,7 +17,7 @@ func NewConfig(port string, apiSecret string) *Config {
 
 	// Print error message if API_SECRET is not provided
 	if apiSecret == "" {
-		log.Fatalln("API_SECRET is required")
+		log.Fatalln("API_SECRET environment variable is required for security purposes. Please set it before starting the server.")
 	}
 
 	return &Config{
