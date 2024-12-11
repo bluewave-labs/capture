@@ -35,7 +35,9 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 
 	for _, p := range partitions {
 		// Filter out partitions that are already checked or not a device
-		if slices.Contains(checkedSlice, p.Device) || !strings.HasPrefix(p.Device, "/dev") {
+		// Also, exclude '/dev/loop' devices to avoid unnecessary partitions
+		// * /dev/loop devices are used for mounting snap packages
+		if slices.Contains(checkedSlice, p.Device) || !strings.HasPrefix(p.Device, "/dev") || strings.HasPrefix(p.Device, "/dev/loop") {
 			continue
 		}
 
