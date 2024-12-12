@@ -12,6 +12,9 @@ test:
 		-timeout 30s \
 		github.com/bluewave-labs/capture/test
 
+lint:
+	@golangci-lint run
+
 build:
     @go build -o dist/capture ./cmd/capture/
 
