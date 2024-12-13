@@ -7,18 +7,13 @@ on:
       # v1.0.0, v1.0.1, ...
       - 'v*'
 
-env:
-  # Use docker.io for Docker Hub if empty
-  REGISTRY: ghcr.io
-    # github.repository as <account>/<repo>
-  IMAGE_NAME: ${{ github.repository }}
+permissions:
+      contents: write
+      packages: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
     steps:
       -
         name: Checkout
@@ -40,3 +35,5 @@ jobs:
         env:
           # Pass the GitHub token to GoReleaser
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Pass the registry and image name to GoReleaser
+          KO_DOCKER_REPO: ghcr.io/bluewave-labs/capture
