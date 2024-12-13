@@ -34,7 +34,6 @@ kos:
     ldflags:
       - -s -w
       - -extldflags "-static"
-      - -X main.Version={{.Tag}}
     creation_time: "{{.CommitTimestamp}}"
     sbom: spdx
     env:
