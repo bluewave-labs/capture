@@ -1,9 +1,9 @@
 version: 2
-project_name: bwuagent
+project_name: capture
 
 builds:
-  - id: bwuagent
-    main: ./cmd/api
+  - id: capture
+    main: ./cmd/capture
     env:
       - CGO_ENABLED=0
     goos:
@@ -20,6 +20,28 @@ builds:
       - goos: windows
         goarch: arm64
 
+kos:
+  - id: capture
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    tags:
+      - latest
+      - '{{.Tag}}'
+    main: ./cmd/capture
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -extldflags "-static"
+      - -X main.Version={{.Tag}}
+    creation_time: "{{.CommitTimestamp}}"
+    sbom: spdx
+    env:
+      - CGO_ENABLED=0
+    bare: true
+    
+
 archives:
   - format: tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
@@ -35,3 +57,7 @@ checksum:
 
 changelog:
   sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
