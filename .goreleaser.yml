@@ -1,0 +1,62 @@
+version: 2
+project_name: capture
+
+builds:
+  - id: capture
+    main: ./cmd/capture
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      # Disable windows and darwin builds for now, because the app is not working on these platforms
+      # - windows
+      # - darwin
+    goarch:
+      # Support multiple cpu architectures
+      - amd64
+      - arm64
+    ignore:
+      # Ignore the arm64 build on windows
+      - goos: windows
+        goarch: arm64
+
+kos:
+  - id: capture
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    tags:
+      - latest
+      - '{{.Tag}}'
+    main: ./cmd/capture
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -extldflags "-static"
+    creation_time: "{{.CommitTimestamp}}"
+    sbom: spdx
+    env:
+      - CGO_ENABLED=0
+    bare: true
+    
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  # Generate checksum files to confirm the integrity of the files.
+  # `sha256sum <file>`
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
