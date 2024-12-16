@@ -1,0 +1,268 @@
+openapi: 3.0.0
+info:
+  title: Capture
+  description: OpenAPI Specifications for the Capture's API
+  version: 1.0.0
+  license:
+    name: AGPL-3.0
+    url: https://github.com/bluewave-labs/capture/blob/develop/LICENSE
+servers:
+  - url: http://localhost:{PORT}{API_PATH}
+    description: Local development server
+    variables:
+      PORT:
+        default: '59232'
+        description: Port number
+        enum:
+          - '59232'
+      API_PATH:
+        default: /api/v1
+        description: API path
+        enum:
+          - /api/v1
+          - /api/v2
+paths:
+  /health:
+    get:
+      summary: Check if the server is healthy or not
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "OK"
+  /metrics:
+    get:
+      summary: Read server data
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllMetricResponse'
+        '207':
+          description: Multi-Status | Some of the data is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllMetricResponse'
+  /metrics/cpu:
+    get:
+      summary: Read CPU data
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CPUMetricResponse'
+        '207':
+          description: Multi-Status | Some of the data is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CPUMetricResponse'
+  /metrics/memory:
+    get:
+      summary: Read Memory data
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryMetricResponse'
+        '207':
+          description: Multi-Status | Some of the data is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryMetricResponse'
+  /metrics/disk:
+    get:
+      summary: Read Disk data
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiskMetricResponse'
+        '207':
+          description: Multi-Status | Some of the data is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiskMetricResponse'
+  /metrics/host:
+    get:
+      summary: Read Host data
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HostMetricResponse'
+        '207':
+          description: Multi-Status | Some of the data is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HostMetricResponse'
+  /ws:
+    get:
+      summary: Metrics data in 5 seconds
+      responses:
+        '101':
+          description: Protocol Change - WebSocket
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllMetricResponse'
+components:
+  schemas:
+    AllMetricResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            cpu:
+              $ref: '#/components/schemas/CPUData'
+            memory:
+              $ref: '#/components/schemas/MemoryData'
+            disk:
+              type: array
+              items:
+                $ref: '#/components/schemas/DiskData'
+            host:
+              $ref: '#/components/schemas/HostData'
+        errors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MetricErrorObject'
+    CPUMetricResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/CPUData'
+        errors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MetricErrorObject'
+    MemoryMetricResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/MemoryData'
+        errors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MetricErrorObject'
+    DiskMetricResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiskData'
+        errors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MetricErrorObject'
+    HostMetricResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/HostData'
+        errors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MetricErrorObject'
+    CPUData:
+      type: object
+      properties:
+        physical_core:
+          type: integer
+          example: 4
+        logical_core:
+          type: integer
+          example: 8
+        frequency:
+          type: number
+          example: 2500
+        temperature:
+          type: number
+          example: 50
+        free_percent:
+          type: number
+          example: 0.5
+        usage_percent:
+          type: number
+          example: 0.5
+    MemoryData:
+      type: object
+      properties:
+        total_bytes:
+          type: integer
+          example: 1351533568
+        available_bytes:
+          type: integer
+          example: 1365373819
+        used_bytes:
+          type: integer
+          example: 1365373819
+        usage_percent:
+          type: number
+          example: 41.98354
+    DiskData: 
+      type: object
+      properties:
+        device:
+          type: string
+          example: "/dev/sda1"
+        read_speed_bytes:
+          type: integer
+          example: 1024
+        write_speed_bytes:
+          type: integer
+          example: 1024
+        total_bytes:
+          type: integer
+          example: 1024
+        free_bytes:
+          type: integer
+          example: 512
+        usage_percent:
+          type: number
+          example: 0.39
+    HostData:
+      type: object
+      properties:
+        os:
+          type: string
+          example: "linux"
+        platform:
+          type: string
+          example: "debian"
+        kernel_version:
+          type: string
+          example: "5.4.0-42-generic"
+    MetricErrorObject:
+      type: object
+      properties:
+        metric:
+          type: string
+          example: "cpu.temperature"
+        error:
+          type: string
+          example: "unable to get cpu temperature"
