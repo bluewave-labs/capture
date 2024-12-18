@@ -20,7 +20,6 @@ servers:
         description: API path
         enum:
           - /api/v1
-          - /api/v2
 paths:
   /health:
     get:
@@ -33,6 +32,8 @@ paths:
               schema:
                 type: string
                 example: "OK"
+      security:
+          - bearerAuth: []
   /metrics:
     get:
       summary: Read server data
@@ -49,6 +50,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AllMetricResponse'
+      security:
+        - bearerAuth: []
   /metrics/cpu:
     get:
       summary: Read CPU data
@@ -65,6 +68,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CPUMetricResponse'
+      security:
+          - bearerAuth: []
   /metrics/memory:
     get:
       summary: Read Memory data
@@ -81,6 +86,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MemoryMetricResponse'
+      security:
+          - bearerAuth: []
   /metrics/disk:
     get:
       summary: Read Disk data
@@ -97,6 +104,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DiskMetricResponse'
+      security:
+          - bearerAuth: []
   /metrics/host:
     get:
       summary: Read Host data
@@ -113,9 +122,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HostMetricResponse'
-  /ws:
+      security:
+          - bearerAuth: []
+  /ws/metrics:
     get:
-      summary: Metrics data in 5 seconds
+      summary: It will return the data using websocket connection. The data will be updated in every 5 seconds.
       responses:
         '101':
           description: Protocol Change - WebSocket
@@ -123,7 +134,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AllMetricResponse'
+      security:
+          - bearerAuth: []
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     AllMetricResponse:
       type: object
@@ -217,25 +235,19 @@ components:
           example: 1351533568
         available_bytes:
           type: integer
-          example: 1365373819
+          example: 351533568
         used_bytes:
           type: integer
-          example: 1365373819
+          example: 1000000000
         usage_percent:
           type: number
-          example: 41.98354
+          example: 0.2601
     DiskData: 
       type: object
       properties:
         device:
           type: string
           example: "/dev/sda1"
-        read_speed_bytes:
-          type: integer
-          example: 1024
-        write_speed_bytes:
-          type: integer
-          example: 1024
         total_bytes:
           type: integer
           example: 1024
@@ -244,7 +256,7 @@ components:
           example: 512
         usage_percent:
           type: number
-          example: 0.39
+          example: 0.5
     HostData:
       type: object
       properties:
