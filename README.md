@@ -1,127 +1,100 @@
-# Capture: Checkmate agent
+![github-license](https://img.shields.io/github/license/bluewave-labs/capture)
+![github-repo-size](https://img.shields.io/github/repo-size/bluewave-labs/capture)
+![github-commit-activity](https://img.shields.io/github/commit-activity/w/bluewave-labs/capture)
+![github-last-commit-data](https://img.shields.io/github/last-commit/bluewave-labs/capture)
+![github-languages](https://img.shields.io/github/languages/top/bluewave-labs/capture)
+![github-issues-and-prs](https://img.shields.io/github/issues-pr/bluewave-labs/capture)
+![github-issues](https://img.shields.io/github/issues/bluewave-labs/capture)
+[![go-reference](https://pkg.go.dev/badge/github.com/bluewave-labs/capture.svg)](https://pkg.go.dev/github.com/bluewave-labs/capture)
+[![github-actions-lint](https://github.com/bluewave-labs/capture/actions/workflows/lint.yml/badge.svg)](https://github.com/bluewave-labs/capture/actions/workflows/lint.yml)
 
-Capture is a set of tools running on the server and providing information about underlying hardware to the [Checkmate](https://github.com/bluewave-labs/checkmate) server.
+<h1 align="center"><a href="https://bluewavelabs.ca" target="_blank">Capture</a></h1>
 
-## API Responses
+<p align="center"><strong>An open source hardware monitoring agent</strong></p>
 
-| Endpoint          | Method | Description                                                                   |
-|-------------------|--------|-------------------------------------------------------------------------------|
-| `/health`         | GET    | Returns 200 OK                                                                |
-| `/metrics`        | GET    | Returns the all system metrics(cpu,memory,disk,host)                          |
-| `/metrics/cpu`    | GET    | Returns the system cpu metrics                                                |
-| `/metrics/memory` | GET    | Returns the system memory metrics                                             |
-| `/metrics/disk`   | GET    | Returns the system disk metrics                                               |
-| `/metrics/host`   | GET    | Returns the system host informations                                          |
-| `/ws/metrics`     | GET    | Returns the all system metrics(cpu,memory,disk,host) in every n seconds (n=2) |
+Capture is a hardware monitoring agent that collects hardware information from the host machine and exposes it through a RESTful API. The agent is designed to be lightweight and easy to use.
 
-### CPU Response
+Capture is only available for **Linux**.
 
-```jsonc
-{
-    "physical_core":     integer, // Physical cores
-    "logical_core":      integer, // Logical cores aka Threads
-    "frequency":         integer, // Frequency in mHz
-    "current_frequency": integer, // Current Frequency in mHz
-    "temperature":       float,   // Temperature in Celsius     
-    "free_percent":      float,   // Free percentage           //* 1- Usage
-    "usage_percent":     float    // Usage percentage          //* Total - Idle / Total
-}
+## Docker Installation
+
+Docker installation is **recommended** for running the Capture. Please see the [Docker run flags](#docker-run-flags) section for more information.
+
+Pull the image from the registry and then run it with one command.
+
+```shell
+docker run -v /etc/os-release:/etc/os-release:ro \
+    -p 59232:59232 \
+    -e API_SECRET=REPLACE_WITH_YOUR_SECRET \
+    -d \
+    ghcr.io/bluewave-labs/capture:latest
 ```
 
-### Memory Response
+If you don't want to pull the image, you can build and run it locally.
 
-```jsonc
-{
-    "total_bytes":     integer, // Total space in bytes
-    "available_bytes": integer, // Available space in bytes
-    "used_bytes":      integer, // Used space in bytes      //* Total - Free - Buffers - Cached
-    "usage_percent":   float    // Usage Percent            //* (Used / Total) * 100.0
-}
+```shell
+docker buildx build -f Dockerfile -t capture .
 ```
 
-### Disk Response
-
-```jsonc
-[
-    {
-        "read_speed_bytes":  integer, // WIP
-        "write_speed_bytes": integer, // WIP
-        "total_bytes":       integer, // Total space of "/" in bytes
-        "free_bytes":        integer, // Free space of "/" in bytes
-        "usage_percent":     float    // Usage Percent of "/"
-    }
-]
+```shell
+docker run -v /etc/os-release:/etc/os-release:ro \
+    -p 59232:59232 \
+    -e API_SECRET=REPLACE_WITH_YOUR_SECRET \
+    -d \
+    capture:latest
 ```
 
-### Host Response
+### Docker run flags
 
-```jsonc
-{
-    "os":             string, // linux, darwin, windows
-    "platform":       string, // arch, debian, suse...
-    "kernel_version": string, // 6.10.10, 6.0.0, 6.10.0-zen...
-}
+Before running the container, please make sure to replace the `REPLACE_WITH_YOUR_SECRET` with your own secret.
+
+! **You need to put this secret to Checkmate's infrastructure monitoring dashboard**
+
+- `-v /etc/os-release:/etc/os-release:ro` to get platform information correctly
+- `-p 59232:59232` to expose the port 59232
+- `-d` to run the container in detached mode
+- `-e API_SECRET=REPLACE_WITH_YOUR_SECRET` to set the API secret
+- (optional) `-e GIN_MODE=release/debug` to switch between release and debug mode
+
+```shell
+docker run -v /etc/os-release:/etc/os-release:ro \
+    -p 59232:59232 \
+    -e API_SECRET=REPLACE_WITH_YOUR_SECRET \
+    -d \
+    ghcr.io/bluewave-labs/capture:latest
 ```
 
-## Availability
+## System Installation
 
-| CPU                 | GNU/Linux | Windows | MacOS     |
-| --------------------|-----------|---------|-----------|
-| Physical Core Count | ✅        | -       | -         |
-| Logical Core Count  | ✅        | -       | -         |
-| Frequency           | ✅        | -       | -         |
-| Current Frequency   | ✅        | -       | -         |
-| Temperature         | ✅        | -       | -         |
-| Free Percent        | ✅        | -       | -         |
-| Usage Percent       | ✅        | -       | -         |
+### Pre-built Binaries
 
-| Memory          | GNU/Linux | Windows | MacOS     |
-| ----------------|-----------|---------|-----------|
-| Total Bytes     | ✅        | -       | -         |
-| Available Bytes | ✅        | -       | -         |
-| Used Bytes      | ✅        | -       | -         |
-| Usage Percent   | ✅        | -       | -         |
+You can download the pre-built binaries from the [GitHub Releases](https://github.com/bluewave-labs/capture/releases) page.
 
-| Disk               | GNU/Linux | Windows | MacOS     |
-| -------------------|-----------|---------|-----------|
-| Read Speed  Bytes  | -         | -       | -         |
-| Write Speed Byres  | -         | -       | -         |
-| Total Bytes        | ✅        | -       | -         |
-| Free Bytes         | ✅        | -       | -         |
-| Usage Percent      | ✅        | -       | -         |
+### Build from Source
 
-| Host           | GNU/Linux | Windows | MacOS     |
-| ---------------|-----------|---------|-----------|
-| OS             | ✅        | -       | -         |
-| Platform       | ✅        | -       | -         |
-| Kernel Version | ✅        | -       | -         |
+You can build the Capture from the source code.
 
-## Requirements
+#### Prerequisites
 
-- [Go](https://go.dev/dl/)
-- [Just](https://github.com/casey/just)
+- [Git](https://git-scm.com/downloads) is essential for cloning the repository.
+- [Go](https://go.dev/dl/) is required to build the project.
+- [Just](https://github.com/casey/just/releases) is optional but **recommended** for building the project with pre-defined commands.
 
-## Set Up Guide
+#### Steps
 
-1. Git Clone
+1. Clone the repository
 
     ```shell
-    git clone REPO_LINK
+    git clone git@github.com:bluewave-labs/capture
     ```
 
-2. Change your directory
+2. Change the directory
 
     ```shell
     cd capture
     ```
 
-3. Install dependencies
-
-    ```shell
-    go mod download
-    ```
-
-4. Build the project
+3. Build the Capture
 
     ```shell
     just build
@@ -130,24 +103,20 @@ Capture is a set of tools running on the server and providing information about 
     or
 
     ```shell
-    go build -o capture ./cmd/capture/
+    go build -o dist/capture ./cmd/capture/
     ```
 
-5. Run the project
+4. Run the Capture
 
     ```shell
-    ./capture
+    ./dist/capture
     ```
 
-    or
+5. Environment Variables
 
-    ```shell
-    go run ./cmd/capture/
-    ```
+    Please make sure to replace the `your_secret` with your own secret
 
-6. Environment Variables
-
-    If you want to change the port or the API secret, you can use these environment variables:
+    ! **You need to put this secret to Checkmate's infrastructure monitoring dashboard**
 
     ```shell
     PORT = your_port
@@ -159,8 +128,18 @@ Capture is a set of tools running on the server and providing information about 
 
     ```shell
     # API_SECRET is required
-    PORT=8080 API_SECRET=your_secret GIN_MODE=release ./capture
+    API_SECRET=your_secret GIN_MODE=release ./capture
 
     # Minimal required configuration
-    API_SECRET=your_secret ./capture
+    API_SECRET=your_secret ./dist/capture
     ```
+
+## API Documentation
+
+Our API is documented in accordance with the OpenAPI spec.
+
+You can find the OpenAPI specifications [here](https://github.com/bluewave-labs/capture/blob/develop/openapi.yml)
+
+## License
+
+Capture is licensed under AGPLv3. You can find the license [here](./LICENSE)
