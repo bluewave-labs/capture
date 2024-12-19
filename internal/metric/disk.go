@@ -10,17 +10,15 @@ import (
 func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 	defaultDiskData := []*DiskData{
 		{
-			Device:          "unknown",
-			ReadSpeedBytes:  nil,
-			WriteSpeedBytes: nil,
-			TotalBytes:      nil,
-			FreeBytes:       nil,
-			UsagePercent:    nil,
+			Device:       "unknown",
+			TotalBytes:   nil,
+			FreeBytes:    nil,
+			UsagePercent: nil,
 		},
 	}
 	var diskErrors []CustomErr
 	var metricsSlice MetricsSlice
-	var checkedSlice []string // To keep track of checked partitions
+	var checkedSlice = make([]string, 0, 10) // To keep track of checked partitions
 
 	// Set all flag to "false" to get only necessary partitions
 	// Avoiding unnecessary partitions like /run/user/1000, /run/credentials
@@ -52,12 +50,10 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 
 		checkedSlice = append(checkedSlice, p.Device)
 		metricsSlice = append(metricsSlice, &DiskData{
-			Device:          p.Device,
-			ReadSpeedBytes:  nil, // TODO: Implement
-			WriteSpeedBytes: nil, // TODO: Implement
-			TotalBytes:      &diskUsage.Total,
-			FreeBytes:       &diskUsage.Free,
-			UsagePercent:    RoundFloatPtr(diskUsage.UsedPercent/100, 4),
+			Device:       p.Device,
+			TotalBytes:   &diskUsage.Total,
+			FreeBytes:    &diskUsage.Free,
+			UsagePercent: RoundFloatPtr(diskUsage.UsedPercent/100, 4),
 		})
 	}
 

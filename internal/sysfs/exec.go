@@ -8,7 +8,7 @@ import (
 
 func ShellExec(c string) (string, error) {
 	if strings.Contains(c, "&&") || strings.Contains(c, "||") || strings.Contains(c, ";") {
-		return "", errors.New("It's forbidden to execute consecutive commands")
+		return "", errors.New("it's forbidden to execute consecutive commands")
 	}
 	cmd := exec.Command("bash", "-c", c)
 

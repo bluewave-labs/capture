@@ -8,13 +8,13 @@ type Metric interface {
 	isMetric()
 }
 
-type ApiResponse struct {
+type APIResponse struct {
 	Data   Metric      `json:"data"`
 	Errors []CustomErr `json:"errors"`
 }
 
 type AllMetrics struct {
-	Cpu    CpuData      `json:"cpu"`
+	CPU    CPUData      `json:"cpu"`
 	Memory MemoryData   `json:"memory"`
 	Disk   MetricsSlice `json:"disk"`
 	Host   HostData     `json:"host"`
@@ -27,7 +27,7 @@ type CustomErr struct {
 	Error  string   `json:"err"`
 }
 
-type CpuData struct {
+type CPUData struct {
 	PhysicalCore     int       `json:"physical_core"`     // Physical cores
 	LogicalCore      int       `json:"logical_core"`      // Logical cores aka Threads
 	Frequency        float64   `json:"frequency"`         // Frequency in mHz
@@ -37,7 +37,7 @@ type CpuData struct {
 	UsagePercent     float64   `json:"usage_percent"`     // Usage percentage                              //* Total - Idle / Total
 }
 
-func (c CpuData) isMetric() {}
+func (c CPUData) isMetric() {}
 
 type MemoryData struct {
 	TotalBytes     uint64   `json:"total_bytes"`     // Total space in bytes
@@ -49,12 +49,10 @@ type MemoryData struct {
 func (m MemoryData) isMetric() {}
 
 type DiskData struct {
-	Device          string   `json:"device"`            // Device
-	ReadSpeedBytes  *uint64  `json:"read_speed_bytes"`  // TODO: Implement
-	WriteSpeedBytes *uint64  `json:"write_speed_bytes"` // TODO: Implement
-	TotalBytes      *uint64  `json:"total_bytes"`       // Total space of device in bytes
-	FreeBytes       *uint64  `json:"free_bytes"`        // Free space of device in bytes
-	UsagePercent    *float64 `json:"usage_percent"`     // Usage Percent of device
+	Device       string   `json:"device"`        // Device
+	TotalBytes   *uint64  `json:"total_bytes"`   // Total space of device in bytes
+	FreeBytes    *uint64  `json:"free_bytes"`    // Free space of device in bytes
+	UsagePercent *float64 `json:"usage_percent"` // Usage Percent of device
 }
 
 func (d DiskData) isMetric() {}
@@ -68,7 +66,7 @@ type HostData struct {
 func (h HostData) isMetric() {}
 
 func GetAllSystemMetrics() (AllMetrics, []CustomErr) {
-	cpu, cpuErr := CollectCpuMetrics()
+	cpu, cpuErr := CollectCPUMetrics()
 	memory, memErr := CollectMemoryMetrics()
 	disk, diskErr := CollectDiskMetrics()
 	host, hostErr := GetHostInformation()
@@ -92,7 +90,7 @@ func GetAllSystemMetrics() (AllMetrics, []CustomErr) {
 	}
 
 	return AllMetrics{
-		Cpu:    *cpu,
+		CPU:    *cpu,
 		Memory: *memory,
 		Disk:   disk,
 		Host:   *host,

@@ -22,7 +22,7 @@ func readTempFile(path string) (float32, error) {
 	return float32(temp) / 1000, nil
 }
 
-func readCpuFreqFile(path string) (int, error) {
+func readCPUFreqFile(path string) (int, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return 0, err
@@ -36,7 +36,7 @@ func readCpuFreqFile(path string) (int, error) {
 	return freq, nil
 }
 
-func CpuTemperature() ([]float32, error) {
+func CPUTemperature() ([]float32, error) {
 	// Look in all these folders for core temp
 	corePaths := []string{
 		"/sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input",
@@ -74,8 +74,8 @@ func CpuTemperature() ([]float32, error) {
 	return temps, nil
 }
 
-func CpuCurrentFrequency() (int, error) {
-	frequency, cpuFrequencyError := readCpuFreqFile("/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq")
+func CPUCurrentFrequency() (int, error) {
+	frequency, cpuFrequencyError := readCPUFreqFile("/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq")
 
 	if cpuFrequencyError != nil {
 		return 0, cpuFrequencyError

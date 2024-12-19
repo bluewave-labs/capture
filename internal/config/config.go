@@ -4,7 +4,7 @@ import "log"
 
 type Config struct {
 	Port      string
-	ApiSecret string
+	APISecret string
 }
 
 var defaultPort = "59232"
@@ -22,13 +22,13 @@ func NewConfig(port string, apiSecret string) *Config {
 
 	return &Config{
 		Port:      port,
-		ApiSecret: apiSecret,
+		APISecret: apiSecret,
 	}
 }
 
 func Default() *Config {
 	return &Config{
 		Port:      defaultPort,
-		ApiSecret: "",
+		APISecret: "",
 	}
 }

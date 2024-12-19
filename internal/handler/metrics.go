@@ -10,11 +10,10 @@ func handleMetricResponse(c *gin.Context, metrics metric.Metric, errs []metric.C
 	if len(errs) > 0 {
 		statusCode = 207
 	}
-	c.JSON(statusCode, metric.ApiResponse{
+	c.JSON(statusCode, metric.APIResponse{
 		Data:   metrics,
 		Errors: errs,
 	})
-	return
 }
 
 func Metrics(c *gin.Context) {
@@ -23,7 +22,7 @@ func Metrics(c *gin.Context) {
 }
 
 func MetricsCPU(c *gin.Context) {
-	cpuMetrics, metricsErrs := metric.CollectCpuMetrics()
+	cpuMetrics, metricsErrs := metric.CollectCPUMetrics()
 	handleMetricResponse(c, cpuMetrics, metricsErrs)
 }
 
