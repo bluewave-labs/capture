@@ -23,7 +23,7 @@ var appConfig = config.NewConfig(
 func main() {
 	r := gin.Default()
 	apiV1 := r.Group("/api/v1")
-	apiV1.Use(middleware.AuthRequired(appConfig.ApiSecret))
+	apiV1.Use(middleware.AuthRequired(appConfig.APISecret))
 
 	// Health Check
 	apiV1.GET("/health", handler.Health)
@@ -35,12 +35,10 @@ func main() {
 	apiV1.GET("/metrics/disk", handler.MetricsDisk)
 	apiV1.GET("/metrics/host", handler.MetricsHost)
 
-	// WebSocket Connection
-	apiV1.GET("/ws/metrics", handler.WebSocket)
-
 	server := &http.Server{
-		Addr:    ":" + appConfig.Port,
-		Handler: r.Handler(),
+		Addr:              ":" + appConfig.Port,
+		Handler:           r.Handler(),
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	// Graceful shutdown
@@ -57,10 +55,9 @@ func main() {
 	if err := server.Shutdown(ctx); err != nil {
 		log.Fatal("server shutdown:", err)
 	}
-	select {
-	case <-ctx.Done():
-		log.Println("timeout of 5 seconds.")
-	}
+	<-ctx.Done()
+	log.Println("timeout of 5 seconds.")
+
 	log.Println("server exiting")
 }
 
