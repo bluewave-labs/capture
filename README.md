@@ -70,6 +70,14 @@ docker run -v /etc/os-release:/etc/os-release:ro \
 
 You can download the pre-built binaries from the [GitHub Releases](https://github.com/bluewave-labs/capture/releases) page.
 
+### Go Package
+
+You can install the Capture using the `go install` command.
+
+```shell
+go install github.com/bluewave-labs/capture/cmd/capture@latest
+```
+
 ### Build from Source
 
 You can build the Capture from the source code.
@@ -112,27 +120,35 @@ You can build the Capture from the source code.
     ./dist/capture
     ```
 
-5. Environment Variables
+## Environment Variables
 
-    Please make sure to replace the `your_secret` with your own secret
+Configure the capture with the following environment variables:
 
-    ! **You need to put this secret to Checkmate's infrastructure monitoring dashboard**
+| Variable     | Description                          | Required/Optional |
+| ------------ | ------------------------------------ | ----------------- |
+| `PORT`       | The port that the Capture listens on | Optional          |
+| `API_SECRET` | The secret key for the API           | Required          |
+| `GIN_MODE`   | The mode of the Gin framework        | Optional          |
 
-    ```shell
-    PORT = your_port
-    API_SECRET = your_secret
-    GIN_MODE = release/debug
-    ```
+### Example
 
-    Usage:
+Please make sure to replace the default `your_secret` with your own secret.
 
-    ```shell
-    # API_SECRET is required
-    API_SECRET=your_secret GIN_MODE=release ./capture
+! **You need to put this secret to Checkmate's infrastructure monitoring dashboard**
 
-    # Minimal required configuration
-    API_SECRET=your_secret ./dist/capture
-    ```
+```shell
+PORT = your_port
+API_SECRET = your_secret
+GIN_MODE = release/debug
+```
+
+```shell
+# API_SECRET is required
+API_SECRET=your_secret GIN_MODE=release ./capture
+
+# Minimal required configuration
+API_SECRET=your_secret ./dist/capture
+```
 
 ## API Documentation
 
