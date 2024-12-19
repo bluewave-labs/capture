@@ -7,7 +7,7 @@ import (
 	"github.com/shirou/gopsutil/v4/cpu"
 )
 
-func CollectCpuMetrics() (*CpuData, []CustomErr) {
+func CollectCPUMetrics() (*CPUData, []CustomErr) {
 	// Collect CPU Core Counts
 	cpuPhysicalCoreCount, cpuPhysicalErr := cpu.Counts(false)
 	cpuLogicalCoreCount, cpuLogicalErr := cpu.Counts(true)
@@ -60,7 +60,7 @@ func CollectCpuMetrics() (*CpuData, []CustomErr) {
 	}
 
 	// Collect CPU Temperature from sysfs
-	cpuTemp, cpuTempErr := sysfs.CpuTemperature()
+	cpuTemp, cpuTempErr := sysfs.CPUTemperature()
 
 	if cpuTempErr != nil {
 		cpuErrors = append(cpuErrors, CustomErr{
@@ -70,7 +70,7 @@ func CollectCpuMetrics() (*CpuData, []CustomErr) {
 		cpuTemp = nil
 	}
 
-	cpuCurrentFrequency, cpuCurFreqErr := sysfs.CpuCurrentFrequency()
+	cpuCurrentFrequency, cpuCurFreqErr := sysfs.CPUCurrentFrequency()
 	if cpuCurFreqErr != nil {
 		cpuErrors = append(cpuErrors, CustomErr{
 			Metric: []string{"cpu.current_frequency"},
@@ -79,7 +79,7 @@ func CollectCpuMetrics() (*CpuData, []CustomErr) {
 		cpuCurrentFrequency = 0
 	}
 
-	return &CpuData{
+	return &CPUData{
 		PhysicalCore:     cpuPhysicalCoreCount,
 		LogicalCore:      cpuLogicalCoreCount,
 		Frequency:        cpuFrequency,

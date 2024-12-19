@@ -20,8 +20,8 @@ func RoundFloat(val float64, precision uint) float64 {
 	return prc
 }
 
-func RandomIntPtr(max int64) *int {
-	n, err := rand.Int(rand.Reader, big.NewInt(max))
+func RandomIntPtr(maximum int64) *int {
+	n, err := rand.Int(rand.Reader, big.NewInt(maximum))
 	if err != nil {
 		panic(err) // handle error appropriately in production
 	}
