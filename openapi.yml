@@ -124,18 +124,6 @@ paths:
                 $ref: '#/components/schemas/HostMetricResponse'
       security:
           - bearerAuth: []
-  /ws/metrics:
-    get:
-      summary: It will return the data using websocket connection. The data will be updated in every 5 seconds.
-      responses:
-        '101':
-          description: Protocol Change - WebSocket
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AllMetricResponse'
-      security:
-          - bearerAuth: []
 components:
   securitySchemes:
     bearerAuth:
