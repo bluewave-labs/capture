@@ -46,24 +46,32 @@ func main() {
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// Handle force shutdown
+	go func() {
+		<-quit
+		log.Println("force shutdown!")
+		os.Exit(1)
+	}()
+
 	<-quit
-	log.Println("shutdown server ...")
+	log.Println("received exit signal, gracefully shutting down the server.")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		log.Fatal("server shutdown:", err)
+		log.Fatal("server shutdown error:", err)
 	}
 	<-ctx.Done()
 	log.Println("timeout of 5 seconds.")
 
-	log.Println("server exiting")
+	log.Println("server has been shutdown.")
 }
 
 func serve(srv *http.Server) {
 	srvErr := srv.ListenAndServe()
 	if srvErr != nil && srvErr != http.ErrServerClosed {
-		log.Fatalf("listen: %s\n", srvErr)
+		log.Fatalf("listen error: %s\n", srvErr)
 	}
 }
