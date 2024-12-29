@@ -41,29 +41,29 @@ func main() {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	// Graceful shutdown
 	go serve(server)
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	log.Println("shutdown server ...")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := server.Shutdown(ctx); err != nil {
-		log.Fatal("server shutdown:", err)
+	if err := gracefulShutdown(server, 5*time.Second); err != nil {
+		log.Fatalln("graceful shutdown error", err)
 	}
-	<-ctx.Done()
-	log.Println("timeout of 5 seconds.")
-
-	log.Println("server exiting")
 }
 
 func serve(srv *http.Server) {
 	srvErr := srv.ListenAndServe()
 	if srvErr != nil && srvErr != http.ErrServerClosed {
-		log.Fatalf("listen: %s\n", srvErr)
+		log.Fatalf("listen error: %s\n", srvErr)
 	}
+}
+
+func gracefulShutdown(srv *http.Server, timeout time.Duration) error {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	sig := <-quit
+	log.Printf("signal received: %v", sig)
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	return srv.Shutdown(ctx)
 }
