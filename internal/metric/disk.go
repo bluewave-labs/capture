@@ -20,9 +20,8 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 	var metricsSlice MetricsSlice
 	var checkedSlice = make([]string, 0, 10) // To keep track of checked partitions
 
-	// Set all flag to "false" to get only necessary partitions
-	// Avoiding unnecessary partitions like /run/user/1000, /run/credentials
-	partitions, partErr := disk.Partitions(false)
+	// Set all flag "true" to get all partitions instead of just physical ones.
+	partitions, partErr := disk.Partitions(true)
 
 	if partErr != nil {
 		diskErrors = append(diskErrors, CustomErr{
