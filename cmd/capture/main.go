@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -15,12 +17,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var appConfig = config.NewConfig(
-	os.Getenv("PORT"),
-	os.Getenv("API_SECRET"),
-)
+var appConfig *config.Config
+
+var Version = "develop" // This will be set during compile time using go build ldflags
 
 func main() {
+	showVersion := flag.Bool("version", false, "Display the version of the capture")
+	flag.Parse()
+
+	// Check if the version flag is provided
+	if *showVersion {
+		fmt.Printf("Capture version: %s\n", Version)
+		os.Exit(0)
+	}
+
+	appConfig = config.NewConfig(
+		os.Getenv("PORT"),
+		os.Getenv("API_SECRET"),
+	)
+
+	// Initialize the Gin with default middlewares
 	r := gin.Default()
 	apiV1 := r.Group("/api/v1")
 	apiV1.Use(middleware.AuthRequired(appConfig.APISecret))
