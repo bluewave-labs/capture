@@ -1,0 +1,22 @@
+[Unit]
+Description=Capture Service
+Documentation=https://docs.checkmate.so/users-guide/server-monitoring-agent
+After=network.target
+
+[Service]
+## TODO: Replace with your binary path
+ExecStart=YOUR_PATH/capture
+WorkingDirectory=YOUR_PATH
+Restart=always
+RestartSec=3
+
+## TODO: REPLACE WITH YOUR SECRET
+Environment="API_SECRET=your_secret_here"
+Environment="GIN_MODE=release"
+
+## TODO: Replace with your user and group names
+User=user_name
+Group=group_name
+
+[Install]
+WantedBy=multi-user.target
