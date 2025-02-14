@@ -9,6 +9,14 @@ ExecStart=YOUR_PATH/capture
 WorkingDirectory=YOUR_PATH
 Restart=always
 RestartSec=3
+Type=simple
+ProtectSystem=strict
+ProtectHome=true
+NoNewPrivileges=true
+RestrictNamespaces=yes
+ProtectKernelTunables=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
 
 ## TODO: REPLACE WITH YOUR SECRET
 Environment="API_SECRET=your_secret_here"
