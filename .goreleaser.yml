@@ -44,14 +44,13 @@ kos:
     env:
       - CGO_ENABLED=0
     bare: true
-    
 
 archives:
-  - format: tar.gz
+  - formats: tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
     format_overrides:
       - goos: windows
-        format: zip
+        formats: zip
 
 checksum:
   # Generate checksum files to confirm the integrity of the files.
