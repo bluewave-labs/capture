@@ -65,7 +65,7 @@ func main() {
 }
 
 func serve(srv *http.Server) {
-	srvErr := srv.ListenAndServe()
+	srvErr := srv.ListenAndServeTLS("././tls/cert.pem", "././tls/key.pem")
 	if srvErr != nil && srvErr != http.ErrServerClosed {
 		log.Fatalf("listen error: %s\n", srvErr)
 	}
