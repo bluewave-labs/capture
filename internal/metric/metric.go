@@ -13,6 +13,13 @@ type APIResponse struct {
 	Errors []CustomErr `json:"errors"`
 }
 
+type SmartMetric struct {
+	Data   map[string]string `json:"data"`
+	Errors []CustomErr `json:"errors"`
+}
+
+func (s SmartMetric) isMetric() {}
+
 type AllMetrics struct {
 	CPU    CPUData      `json:"cpu"`
 	Memory MemoryData   `json:"memory"`
