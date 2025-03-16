@@ -52,6 +52,10 @@ type DiskData struct {
 	Device       string   `json:"device"`        // Device
 	TotalBytes   *uint64  `json:"total_bytes"`   // Total space of device in bytes
 	FreeBytes    *uint64  `json:"free_bytes"`    // Free space of device in bytes
+	ReadBytes	 *uint64  `json:"read_bytes"`    // Amount of data read from the disk in bytes
+	WriteBytes   *uint64  `json:"write_bytes"`   // Amount of data written to the disk in bytes
+	ReadTime     *uint64  `json:"read_time"`     // Cumulative time spent performing read operations
+	WriteTime    *uint64  `json:"write_time"`    // Cumulative time spent performing write operations
 	UsagePercent *float64 `json:"usage_percent"` // Usage Percent of device
 }
 
