@@ -43,5 +43,5 @@ func MetricsHost(c *gin.Context) {
 
 func SmartMetrics(c *gin.Context) {
     smartMetrics, smartErrs := metric.GetSmartMetrics()
-	handleMetricResponse(c,smartMetrics.Data, append(smartMetrics.Errors, smartErrs...))
+	handleMetricResponse(c,smartMetrics, smartErrs)
 }

@@ -13,13 +13,6 @@ type APIResponse struct {
 	Errors []CustomErr `json:"errors"`
 }
 
-type SmartMetric struct {
-	Data   SmartData    `json:"data"`   // The SMART data
-	Errors []CustomErr  `json:"errors"` // Any errors encountered
-}
-
-func (s SmartMetric) isMetric() {}
-
 type SmartData struct {
 	AvailableSpare                string `json:"available_spare"`
 	AvailableSpareThreshold       string `json:"available_spare_threshold"`
@@ -27,14 +20,11 @@ type SmartData struct {
 	CriticalWarning               string `json:"critical_warning"`
 	DataUnitsRead                 string `json:"data_units_read"`
 	DataUnitsWritten              string `json:"data_units_written"`
-	ErrorInformationLogEntries    string `json:"error_information_log_entries"`
 	HostReadCommands              string `json:"host_read_commands"`
 	HostWriteCommands             string `json:"host_write_commands"`
-	MediaAndDataIntegrityErrors  string `json:"media_and_data_integrity_errors"`
 	PercentageUsed                string `json:"percentage_used"`
 	PowerCycles                   string `json:"power_cycles"`
 	PowerOnHours                  string `json:"power_on_hours"`
-	Read1EntriesFromErrorLogFailed string `json:"read_1_entries_from_error_information_log_failed"`
 	SmartOverallHealthResult      string `json:"smart_overall-health_self-assessment_test_result"`
 	Temperature                   string `json:"temperature"`
 	UnsafeShutdowns               string `json:"unsafe_shutdowns"`
