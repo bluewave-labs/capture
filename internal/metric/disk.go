@@ -13,7 +13,7 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 			Device:       "unknown",
 			TotalBytes:   nil,
 			FreeBytes:    nil,
-			ReadBytes:	nil,
+			ReadBytes:    nil,
 			WriteBytes:   nil,
 			ReadTime:     nil,
 			WriteTime:    nil,
