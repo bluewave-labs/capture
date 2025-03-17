@@ -13,7 +13,7 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 			Device:       "unknown",
 			TotalBytes:   nil,
 			FreeBytes:    nil,
-			ReadBytes: 	  nil,
+			ReadBytes:	nil,
 			WriteBytes:   nil,
 			ReadTime:     nil,
 			WriteTime:    nil,
@@ -51,7 +51,8 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 			continue
 		}
 
-		stats, _ := diskIOCounts[p.Device]
+		deviceName := strings.TrimPrefix(p.Device, "/dev/")
+		stats := diskIOCounts[deviceName]
 
 		diskUsage, diskUsageErr := disk.Usage(p.Mountpoint)
 		if diskUsageErr != nil {
