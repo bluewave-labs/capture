@@ -156,7 +156,7 @@ func getMetrics(device string) (*SmartData, []CustomErr) {
 			Error:  fmt.Sprintf("smartctl failed: %v", err),
 		}}
 	}
-	
+
 	return parseSmartctlOutput(string(out))
 }
 
