@@ -9,8 +9,7 @@ import (
 
 // Check if smartctl is installed
 func checkSmartctlInstalled() error {
-	cmd := exec.Command("command", "-v", "smartctl")
-	err := cmd.Run()
+	_, err := exec.LookPath("smartctl")
 	if err != nil {
 		return fmt.Errorf("smartctl is not installed")
 	}
@@ -134,8 +133,20 @@ func getMetrics(device string) (*SmartData, []CustomErr) {
 	out, err := cmd.CombinedOutput()
 
 	// If there's an exit error with exit code 4, we ignore the error
-	if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 4 {
-		err = nil
+	if exitErr, ok := err.(*exec.ExitError); ok {
+		switch exitErr.ExitCode() {
+		case 4:
+
+			err = nil
+		case 2:
+			// Exit code 2 indicates permission denied
+			if strings.HasSuffix(string(out), "failed: Permission denied\n") {
+				return &SmartData{}, []CustomErr{{
+					Metric: []string{"smartctl"},
+					Error:  "smartctl failed: permission denied (try running as root)",
+				}}
+			}
+		}
 	}
 
 	// If there's an error executing the command, return empty SmartData and the error
@@ -145,12 +156,8 @@ func getMetrics(device string) (*SmartData, []CustomErr) {
 			Error:  fmt.Sprintf("smartctl failed: %v", err),
 		}}
 	}
-
-	// Parse the output from smartctl
-	metric, errs := parseSmartctlOutput(string(out))
-
-	// Return the parsed SmartData and the errors
-	return metric, errs
+	
+	return parseSmartctlOutput(string(out))
 }
 
 // GetSmartMetrics retrieves the SMART metrics from all available devices.
