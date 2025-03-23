@@ -13,7 +13,13 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 			Device:       "unknown",
 			TotalBytes:   nil,
 			FreeBytes:    nil,
+			UsedBytes:    nil,
 			UsagePercent: nil,
+
+			TotalInodes:        nil,
+			FreeInodes:         nil,
+			UsedInodes:         nil,
+			InodesUsagePercent: nil,
 		},
 	}
 	var diskErrors []CustomErr
@@ -51,8 +57,14 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 		metricsSlice = append(metricsSlice, &DiskData{
 			Device:       p.Device,
 			TotalBytes:   &diskUsage.Total,
+			UsedBytes:    &diskUsage.Used,
 			FreeBytes:    &diskUsage.Free,
 			UsagePercent: RoundFloatPtr(diskUsage.UsedPercent/100, 4),
+
+			TotalInodes:        &diskUsage.InodesTotal,
+			FreeInodes:         &diskUsage.InodesFree,
+			UsedInodes:         &diskUsage.InodesUsed,
+			InodesUsagePercent: RoundFloatPtr(diskUsage.InodesUsedPercent/100, 4),
 		})
 	}
 

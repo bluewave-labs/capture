@@ -52,7 +52,13 @@ type DiskData struct {
 	Device       string   `json:"device"`        // Device
 	TotalBytes   *uint64  `json:"total_bytes"`   // Total space of device in bytes
 	FreeBytes    *uint64  `json:"free_bytes"`    // Free space of device in bytes
-	UsagePercent *float64 `json:"usage_percent"` // Usage Percent of device
+	UsedBytes    *uint64  `json:"used_bytes"`    // Used space of device in bytes
+	UsagePercent *float64 `json:"usage_percent"` // Usage percent of device
+
+	TotalInodes        *uint64  `json:"total_inodes"`         // Total space of device in inodes
+	FreeInodes         *uint64  `json:"free_inodes"`          // Free space of device in inodes
+	UsedInodes         *uint64  `json:"used_inodes"`          // Used space of device in inodes
+	InodesUsagePercent *float64 `json:"inodes_usage_percent"` // Usage percent of device in inodes
 }
 
 func (d DiskData) isMetric() {}
