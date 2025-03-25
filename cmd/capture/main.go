@@ -52,7 +52,6 @@ func main() {
 	apiV1.GET("/metrics/host", handler.MetricsHost)
 	apiV1.GET("/metrics/smart", handler.SmartMetrics)
 
-
 	server := &http.Server{
 		Addr:              ":" + appConfig.Port,
 		Handler:           r.Handler(),

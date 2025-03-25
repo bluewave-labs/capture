@@ -1,6 +1,7 @@
 package metric
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"regexp"
@@ -20,7 +21,7 @@ func checkSmartctlInstalled() error {
 func scanDevices() ([]string, error) {
 	out, err := exec.Command("smartctl", "--scan").Output()
 	if err != nil {
-		return nil, fmt.Errorf("failed to scan devices: %v", err)
+		return nil, fmt.Errorf("failed to scan devices: %w", err)
 	}
 
 	var devices []string
@@ -133,10 +134,10 @@ func getMetrics(device string) (*SmartData, []CustomErr) {
 	out, err := cmd.CombinedOutput()
 
 	// If there's an exit error with exit code 4, we ignore the error
-	if exitErr, ok := err.(*exec.ExitError); ok {
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
 		switch exitErr.ExitCode() {
 		case 4:
-
 			err = nil
 		case 2:
 			// Exit code 2 indicates permission denied
