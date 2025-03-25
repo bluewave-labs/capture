@@ -13,6 +13,25 @@ type APIResponse struct {
 	Errors []CustomErr `json:"errors"`
 }
 
+type SmartData struct {
+	AvailableSpare           string `json:"available_spare"`
+	AvailableSpareThreshold  string `json:"available_spare_threshold"`
+	ControllerBusyTime       string `json:"controller_busy_time"`
+	CriticalWarning          string `json:"critical_warning"`
+	DataUnitsRead            string `json:"data_units_read"`
+	DataUnitsWritten         string `json:"data_units_written"`
+	HostReadCommands         string `json:"host_read_commands"`
+	HostWriteCommands        string `json:"host_write_commands"`
+	PercentageUsed           string `json:"percentage_used"`
+	PowerCycles              string `json:"power_cycles"`
+	PowerOnHours             string `json:"power_on_hours"`
+	SmartOverallHealthResult string `json:"smart_overall-health_self-assessment_test_result"`
+	Temperature              string `json:"temperature"`
+	UnsafeShutdowns          string `json:"unsafe_shutdowns"`
+}
+
+func (s SmartData) isMetric() {}
+
 type AllMetrics struct {
 	CPU    CPUData      `json:"cpu"`
 	Memory MemoryData   `json:"memory"`
