@@ -156,6 +156,14 @@ Our API is documented in accordance with the OpenAPI spec.
 
 You can find the OpenAPI specifications [here](https://github.com/bluewave-labs/capture/blob/develop/openapi.yml)
 
+## Contributing
+
+We welcome contributions! If you would like to contribute, please read the [CONTRIBUTING.md](./CONTRIBUTING.md) file for more information.
+
+<a href="https://github.com/bluewave-labs/capture/graphs/contributors">
+  <img alt=""src="https://contrib.rocks/image?repo=bluewave-labs/capture" />
+</a>
+
 ## License
 
 Capture is licensed under AGPLv3. You can find the license [here](./LICENSE)
