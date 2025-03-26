@@ -12,9 +12,9 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
-      # Disable windows and darwin builds for now, because the app is not working on these platforms
+      - darwin
+      # Disable Windows builds for now, because Capture is not working on windows properly
       # - windows
-      # - darwin
     goarch:
       # Support multiple cpu architectures
       - amd64

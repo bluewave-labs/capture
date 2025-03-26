@@ -14,8 +14,6 @@
 
 Capture is a hardware monitoring agent that collects hardware information from the host machine and exposes it through a RESTful API. The agent is designed to be lightweight and easy to use.
 
-Capture is only available for **Linux**.
-
 ## Docker Installation
 
 Docker installation is **recommended** for running the Capture. Please see the [Docker run flags](#docker-run-flags) section for more information.
