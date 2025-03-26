@@ -14,8 +14,11 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 			TotalBytes:   nil,
 			FreeBytes:    nil,
 			UsedBytes:    nil,
+			ReadBytes:    nil,
+			WriteBytes:   nil,
+			ReadTime:     nil,
+			WriteTime:    nil,
 			UsagePercent: nil,
-
 			TotalInodes:        nil,
 			FreeInodes:         nil,
 			UsedInodes:         nil,
@@ -44,6 +47,18 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 			continue
 		}
 
+		diskIOCounts, diskIOErr := disk.IOCounters(p.Device)
+		if diskIOErr != nil {
+			diskErrors = append(diskErrors, CustomErr{
+				Metric: []string{"disk.read_bytes", "disk.write_bytes", "disk.read_time", "disk.write_time"},
+				Error:  diskIOErr.Error() + " " + p.Device,
+			})
+			continue
+		}
+
+		deviceName := strings.TrimPrefix(p.Device, "/dev/")
+		stats := diskIOCounts[deviceName]
+
 		diskUsage, diskUsageErr := disk.Usage(p.Mountpoint)
 		if diskUsageErr != nil {
 			diskErrors = append(diskErrors, CustomErr{
@@ -59,6 +74,10 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 			TotalBytes:   &diskUsage.Total,
 			UsedBytes:    &diskUsage.Used,
 			FreeBytes:    &diskUsage.Free,
+			ReadBytes:    &stats.ReadBytes,
+			WriteBytes:   &stats.WriteBytes,
+			ReadTime:     &stats.ReadTime,
+			WriteTime:    &stats.WriteTime,
 			UsagePercent: RoundFloatPtr(diskUsage.UsedPercent/100, 4),
 
 			TotalInodes:        &diskUsage.InodesTotal,
@@ -78,18 +97,3 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 
 	return metricsSlice, diskErrors
 }
-
-// func CollectDiskMetricsTrial() (map[string]disk2.IOCountersStat, error) {
-// 	diskIOCounts, diskIOCountErr := disk2.IOCounters()
-
-// 	if diskIOCountErr != nil {
-// 		return nil, diskIOCountErr
-// 	}
-
-// 	for a, i := range diskIOCounts {
-// 		fmt.Println(a)
-// 		fmt.Println(i.Name)
-// 	}
-
-// 	return diskIOCounts, nil
-// }

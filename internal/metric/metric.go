@@ -13,6 +13,25 @@ type APIResponse struct {
 	Errors []CustomErr `json:"errors"`
 }
 
+type SmartData struct {
+	AvailableSpare           string `json:"available_spare"`
+	AvailableSpareThreshold  string `json:"available_spare_threshold"`
+	ControllerBusyTime       string `json:"controller_busy_time"`
+	CriticalWarning          string `json:"critical_warning"`
+	DataUnitsRead            string `json:"data_units_read"`
+	DataUnitsWritten         string `json:"data_units_written"`
+	HostReadCommands         string `json:"host_read_commands"`
+	HostWriteCommands        string `json:"host_write_commands"`
+	PercentageUsed           string `json:"percentage_used"`
+	PowerCycles              string `json:"power_cycles"`
+	PowerOnHours             string `json:"power_on_hours"`
+	SmartOverallHealthResult string `json:"smart_overall-health_self-assessment_test_result"`
+	Temperature              string `json:"temperature"`
+	UnsafeShutdowns          string `json:"unsafe_shutdowns"`
+}
+
+func (s SmartData) isMetric() {}
+
 type AllMetrics struct {
 	CPU    CPUData      `json:"cpu"`
 	Memory MemoryData   `json:"memory"`
@@ -54,11 +73,15 @@ type DiskData struct {
 	FreeBytes    *uint64  `json:"free_bytes"`    // Free space of device in bytes
 	UsedBytes    *uint64  `json:"used_bytes"`    // Used space of device in bytes
 	UsagePercent *float64 `json:"usage_percent"` // Usage percent of device
-
 	TotalInodes        *uint64  `json:"total_inodes"`         // Total space of device in inodes
 	FreeInodes         *uint64  `json:"free_inodes"`          // Free space of device in inodes
 	UsedInodes         *uint64  `json:"used_inodes"`          // Used space of device in inodes
 	InodesUsagePercent *float64 `json:"inodes_usage_percent"` // Usage percent of device in inodes
+	ReadBytes    *uint64  `json:"read_bytes"`    // Amount of data read from the disk in bytes
+	WriteBytes   *uint64  `json:"write_bytes"`   // Amount of data written to the disk in bytes
+	ReadTime     *uint64  `json:"read_time"`     // Cumulative time spent performing read operations
+	WriteTime    *uint64  `json:"write_time"`    // Cumulative time spent performing write operations
+	UsagePercent *float64 `json:"usage_percent"` // Usage Percent of device
 }
 
 func (d DiskData) isMetric() {}

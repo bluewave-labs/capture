@@ -50,6 +50,7 @@ func main() {
 	apiV1.GET("/metrics/memory", handler.MetricsMemory)
 	apiV1.GET("/metrics/disk", handler.MetricsDisk)
 	apiV1.GET("/metrics/host", handler.MetricsHost)
+	apiV1.GET("/metrics/smart", handler.SmartMetrics)
 
 	server := &http.Server{
 		Addr:              ":" + appConfig.Port,
