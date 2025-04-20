@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -20,6 +21,25 @@ import (
 var appConfig *config.Config
 
 var Version = "develop" // This will be set during compile time using go build ldflags
+
+// getLocalIP retrieves the local IP address of the machine.
+// It returns the first non-loopback IPv4 address found.
+// If no valid address is found, it returns "<ip-address>" as a placeholder.
+// This function is used to display the local IP address in the log message.
+func getLocalIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "<ip-address>"
+	}
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String()
+			}
+		}
+	}
+	return "<ip-address>"
+}
 
 func main() {
 	showVersion := flag.Bool("version", false, "Display the version of the capture")
@@ -51,6 +71,8 @@ func main() {
 	apiV1.GET("/metrics/disk", handler.MetricsDisk)
 	apiV1.GET("/metrics/host", handler.MetricsHost)
 	apiV1.GET("/metrics/smart", handler.SmartMetrics)
+
+	log.Println("WARNING: Remember to add http://" + getLocalIP() + ":" + appConfig.Port + "/api/v1/metrics to your Checkmate Infrastructure Dashboard. Without this endpoint, system metrics will not be displayed.")
 
 	server := &http.Server{
 		Addr:              ":" + appConfig.Port,
