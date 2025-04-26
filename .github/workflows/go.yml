@@ -30,3 +30,15 @@ jobs:
           go-version-file: 'go.mod'
       - run: |
           go test -v -timeout 30s github.com/bluewave-labs/capture/test
+  
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+      - run: go build -o dist/capture ./cmd/capture/
