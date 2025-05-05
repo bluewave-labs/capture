@@ -164,6 +164,10 @@ We welcome contributions! If you would like to contribute, please read the [CONT
   <img alt=""src="https://contrib.rocks/image?repo=bluewave-labs/capture" />
 </a>
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=bluewave-labs/capture&type=Date)](https://www.star-history.com/#bluewave-labs/capture&Date)
+
 ## License
 
 Capture is licensed under AGPLv3. You can find the license [here](./LICENSE)
