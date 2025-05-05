@@ -161,9 +161,8 @@ You can find the OpenAPI specifications [here](https://github.com/bluewave-labs/
 We welcome contributions! If you would like to contribute, please read the [CONTRIBUTING.md](./CONTRIBUTING.md) file for more information.
 
 <a href="https://github.com/bluewave-labs/capture/graphs/contributors">
-  <img alt=""src="https://contrib.rocks/image?repo=bluewave-labs/capture" />
+  <img alt="Contributors Graph" src="https://contrib.rocks/image?repo=bluewave-labs/capture" />
 </a>
-
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=bluewave-labs/capture&type=Date)](https://www.star-history.com/#bluewave-labs/capture&Date)
