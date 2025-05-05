@@ -25,6 +25,13 @@ Thank you for your interest in contributing to Capture! Whether you're fixing bu
    - Proposed solution or feature.
    - Any alternatives considered.
 
+## Architecture Overview
+
+Read a detailed structure of Capture if you would like to deep dive into the architecture.
+
+- [Architecture Overview](docs/README.md#high-level-overview)
+- [Capture DeepWiki Page](https://deepwiki.com/bluewave-labs/capture)
+
 ## Development Setup
 
 1. **Clone the Repository**:
