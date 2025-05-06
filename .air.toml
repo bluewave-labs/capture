@@ -1,0 +1,15 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  bin = "./tmp/capture"
+  cmd = "go build -o ./tmp/capture ./cmd/capture/"
+  include_dir = ["cmd", "internal", "pkg"]
+  include_ext = ["go"]
+  exclude_dir = ["docs", "vendor", "test"]
+  stop_on_error = false
+  rerun_delay = 0
+
+[misc]
+  # Delete tmp directory on exit
+  clean_on_exit = true
