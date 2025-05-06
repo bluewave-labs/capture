@@ -7,6 +7,7 @@
 *.dll
 *.so
 *.dylib
+dist
 
 # Test binary, built with `go test -c`
 *.test
@@ -23,5 +24,9 @@ go.work.sum
 
 # env file
 .env
+
+# Editor directories
 .idea
-dist
+
+# air-verse/air tmp directory
+tmp
