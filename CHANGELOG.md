@@ -4,6 +4,26 @@
 
 Date-Format: YYYY-MM-DD
 
+## 1.1.0 (2025-05-12)
+
+The new Capture release enhances system performance monitoring with features like S.M.A.R.T metrics, disk current read/write stats, iNode usage and a ZFS filtering fix for Debian/Ubuntu systems.
+
+You can access new MacOS pre-built binaries from the [releases page](https://github.com/bluewave-labs/capture/releases).
+
+---
+
+Featured Changes
+
+- [472e7be95987a33dc50d573654dcb1c2f3bee1ab](https://github.com/bluewave-labs/capture/commit/472e7be95987a33dc50d573654dcb1c2f3bee1ab) Feat: Current Read/Write Data (#54) @Br0wnHammer
+- [aadedfb99e8afbc5aa34dd3941ba90cc6ce12bcb](https://github.com/bluewave-labs/capture/commit/aadedfb99e8afbc5aa34dd3941ba90cc6ce12bcb) Fix 51 smartctlr metrics od there serve (#53) @Owaiseimdad
+- [ef5b2367ae8f10a3f0acb55dbd3211e652ae902e](https://github.com/bluewave-labs/capture/commit/ef5b2367ae8f10a3f0acb55dbd3211e652ae902e) Fix: #46 Inode Usage metrics (#56) @noodlewhale
+- [9429bdcae6b8f33e52ef1aa3783098bfe2d311b1](https://github.com/bluewave-labs/capture/commit/9429bdcae6b8f33e52ef1aa3783098bfe2d311b1) feat(logging): Warn users to remember adding endpoint to Checkmate Infrastructure Dashboard (#59) @mertssmnoglu
+- [994e4b3188b949604dcadb17ba34941fda75288f](https://github.com/bluewave-labs/capture/commit/994e4b3188b949604dcadb17ba34941fda75288f) fix(disk): Enhance partition filtering logic to include ZFS filesystems #55 (#64) @mertssmnoglu
+
+[Full Changelog](https://github.com/bluewave-labs/capture/compare/v1.0.1...994e4b3188b949604dcadb17ba34941fda75288f)
+
+Contributors: @mertssmnoglu, @Br0wnHammer, @Owaiseimdad, @noodlewhale
+
 ## 1.0.1 (2025-02-06)
 
 This release focuses on feature improvements and extending system metrics coverage to enhance functionality and reliability.
