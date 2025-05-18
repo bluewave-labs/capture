@@ -37,6 +37,7 @@ type AllMetrics struct {
 	Memory MemoryData   `json:"memory"`
 	Disk   MetricsSlice `json:"disk"`
 	Host   HostData     `json:"host"`
+	Net    MetricsSlice `json:"net"`
 }
 
 func (a AllMetrics) isMetric() {}
@@ -93,11 +94,28 @@ type HostData struct {
 
 func (h HostData) isMetric() {}
 
+type NetData struct {
+	Name        string `json:"name"`         // Network Interface Name
+	BytesSent   uint64 `json:"bytes_sent"`   // Bytes sent
+	BytesRecv   uint64 `json:"bytes_recv"`   // Bytes received
+	PacketsSent uint64 `json:"packets_sent"` // Packets sent
+	PacketsRecv uint64 `json:"packets_recv"` // Packets received
+	ErrIn       uint64 `json:"err_in"`       // Input errors
+	ErrOut      uint64 `json:"err_out"`      // Output errors
+	DropIn      uint64 `json:"drop_in"`      // Input drops
+	DropOut     uint64 `json:"drop_out"`     // Output drops
+	FIFOIn      uint64 `json:"fifo_in"`      // Input FIFO errors
+	FIFOOut     uint64 `json:"fifo_out"`     // Output FIFO errors
+}
+
+func (n NetData) isMetric() {}
+
 func GetAllSystemMetrics() (AllMetrics, []CustomErr) {
 	cpu, cpuErr := CollectCPUMetrics()
 	memory, memErr := CollectMemoryMetrics()
 	disk, diskErr := CollectDiskMetrics()
 	host, hostErr := GetHostInformation()
+	net, netErr := GetNetInformation()
 
 	var errors []CustomErr
 
@@ -117,10 +135,15 @@ func GetAllSystemMetrics() (AllMetrics, []CustomErr) {
 		errors = append(errors, hostErr...)
 	}
 
+	if netErr != nil {
+		errors = append(errors, netErr...)
+	}
+
 	return AllMetrics{
 		CPU:    *cpu,
 		Memory: *memory,
 		Disk:   disk,
 		Host:   *host,
+		Net:    net,
 	}, errors
 }
