@@ -100,12 +100,12 @@ type NetData struct {
 	BytesRecv   uint64 `json:"bytes_recv"`   // Bytes received
 	PacketsSent uint64 `json:"packets_sent"` // Packets sent
 	PacketsRecv uint64 `json:"packets_recv"` // Packets received
-	ErrIn       uint64 `json:"err_in"`       // Input errors
-	ErrOut      uint64 `json:"err_out"`      // Output errors
-	DropIn      uint64 `json:"drop_in"`      // Input drops
-	DropOut     uint64 `json:"drop_out"`     // Output drops
-	FIFOIn      uint64 `json:"fifo_in"`      // Input FIFO errors
-	FIFOOut     uint64 `json:"fifo_out"`     // Output FIFO errors
+	ErrIn       uint64 `json:"err_in"`       // Incoming packets with errors
+	ErrOut      uint64 `json:"err_out"`      // Outgoing packets with errors
+	DropIn      uint64 `json:"drop_in"`      // Incoming packets that were dropped
+	DropOut     uint64 `json:"drop_out"`     // Outgoing packets that were dropped
+	FIFOIn      uint64 `json:"fifo_in"`      // Incoming packets dropped due to full buffer
+	FIFOOut     uint64 `json:"fifo_out"`     // Outgoing packets dropped due to full buffer
 }
 
 func (n NetData) isMetric() {}
