@@ -46,7 +46,7 @@ DO NOT PROVIDE ANY SENSITIVE INFORMATION.
 
 ```
 
-- Output of `df -h`:
+- Output of `df -Th`:
 
 ```shell
 
