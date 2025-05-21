@@ -35,8 +35,23 @@ DO NOT PROVIDE ANY SENSITIVE INFORMATION.
 - Capture Version:
 - Installation Method (binary, container, etc.):
 - Output of `uname -a`:
+
+```shell
+
+```
+
 - Output of `lsblk`:
+
+```shell
+
+```
+
 - Output of `df -h`:
+
+```shell
+
+```
+
 - Root Filesystem Type:
 - Virtualization (bare metal/VM/container):
 
@@ -44,4 +59,13 @@ DO NOT PROVIDE ANY SENSITIVE INFORMATION.
 Please provide:
 
 - Capture metrics responses (if applicable):
+
+```shell
+
+```
+
 - Capture logs (if applicable):
+
+```shell
+
+```
