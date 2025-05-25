@@ -1,5 +1,9 @@
 package metric
 
+import (
+	"os"
+)
+
 type MetricsSlice []Metric
 
 func (m MetricsSlice) isMetric() {}
@@ -9,8 +13,21 @@ type Metric interface {
 }
 
 type APIResponse struct {
-	Data   Metric      `json:"data"`
-	Errors []CustomErr `json:"errors"`
+	Data   	Metric      `json:"data"`
+	Capture CaptureMeta `json:"capture"`
+	Errors 	[]CustomErr `json:"errors"`
+}
+
+type CaptureMeta struct {
+	Version	string `json:"version"`
+	Mode		string `json:"mode"`
+}
+
+func GetCaptureVersionMetdata() CaptureMeta {
+	return CaptureMeta{
+		Version: os.Getenv("VERSION"),
+		Mode:    os.Getenv("GIN_MODE"),
+	}
 }
 
 type SmartData struct {

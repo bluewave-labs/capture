@@ -122,11 +122,12 @@ You can build the Capture from the source code.
 
 Configure the capture with the following environment variables:
 
-| Variable     | Description                          | Required/Optional |
-| ------------ | ------------------------------------ | ----------------- |
-| `PORT`       | The port that the Capture listens on | Optional          |
-| `API_SECRET` | The secret key for the API           | Required          |
-| `GIN_MODE`   | The mode of the Gin framework        | Optional          |
+| Variable      | Description                           | Required/Optional |
+| ------------- | ------------------------------------- | ----------------- |
+| `PORT`        | The port that the Capture listens on  | Optional          |
+| `API_SECRET`  | The secret key for the API            | Required          |
+| `GIN_MODE`    | The mode of the Gin framework         | Optional          |
+| `VERSION`     | The App Version                       | Optional          |
 
 ### Example
 
@@ -138,11 +139,12 @@ Please make sure to replace the default `your_secret` with your own secret.
 PORT = your_port
 API_SECRET = your_secret
 GIN_MODE = release/debug
+VERSION = 1.1.0
 ```
 
 ```shell
 # API_SECRET is required
-API_SECRET=your_secret GIN_MODE=release ./capture
+API_SECRET=your_secret GIN_MODE=release VERSION=1.1.0 ./capture
 
 # Minimal required configuration
 API_SECRET=your_secret ./dist/capture

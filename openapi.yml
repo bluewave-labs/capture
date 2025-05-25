@@ -147,6 +147,13 @@ components:
                 $ref: '#/components/schemas/DiskData'
             host:
               $ref: '#/components/schemas/HostData'
+        capture:
+          type: object
+          properties:
+            version:
+              type: string
+            mode:
+              type: string
         errors:
           type: array
           nullable: true
@@ -230,7 +237,7 @@ components:
         usage_percent:
           type: number
           example: 0.2601
-    DiskData: 
+    DiskData:
       type: object
       properties:
         device:

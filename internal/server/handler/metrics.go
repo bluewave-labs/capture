@@ -12,6 +12,7 @@ func handleMetricResponse(c *gin.Context, metrics metric.Metric, errs []metric.C
 	}
 	c.JSON(statusCode, metric.APIResponse{
 		Data:   metrics,
+		Capture: metric.GetCaptureVersionMetdata(),
 		Errors: errs,
 	})
 }
