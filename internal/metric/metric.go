@@ -1,8 +1,6 @@
 package metric
 
-import (
-	"os"
-)
+import "os"
 
 type MetricsSlice []Metric
 
@@ -24,9 +22,19 @@ type CaptureMeta struct {
 }
 
 func GetCaptureVersionMetdata() CaptureMeta {
+	version := os.Getenv("VERSION")
+	if version == "" {
+		version = "unknown"
+	}
+
+	mode := os.Getenv("GIN_MODE")
+	if mode == "" {
+		mode = "release"
+	}
+
 	return CaptureMeta{
-		Version: os.Getenv("VERSION"),
-		Mode:    os.Getenv("GIN_MODE"),
+		Version: version,
+		Mode:    mode,
 	}
 }
 
