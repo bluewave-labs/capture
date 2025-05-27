@@ -9,8 +9,14 @@ type Metric interface {
 }
 
 type APIResponse struct {
-	Data   Metric      `json:"data"`
-	Errors []CustomErr `json:"errors"`
+	Data    Metric      `json:"data"`
+	Capture CaptureMeta `json:"capture"`
+	Errors  []CustomErr `json:"errors"`
+}
+
+type CaptureMeta struct {
+	Version string `json:"version"`
+	Mode    string `json:"mode"`
 }
 
 type SmartData struct {

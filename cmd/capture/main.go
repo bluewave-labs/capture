@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bluewave-labs/capture/internal/config"
+	"github.com/bluewave-labs/capture/internal/metric"
 	"github.com/bluewave-labs/capture/internal/server"
 )
 
@@ -30,7 +31,9 @@ func main() {
 		os.Getenv("API_SECRET"),
 	)
 
-	srv := server.NewServer(appConfig, nil)
+	srv := server.NewServer(appConfig, nil, &metric.CaptureMeta{
+		Version: Version,
+	})
 	log.Println("WARNING: Remember to add http://" + server.GetLocalIP() + ":" + appConfig.Port + "/api/v1/metrics to your Checkmate Infrastructure Dashboard. Without this endpoint, system metrics will not be displayed.")
 
 	srv.Serve()
