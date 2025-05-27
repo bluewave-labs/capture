@@ -57,11 +57,11 @@ func InitializeHandler(config *config.Config) http.Handler {
 	} else {
 		println("running in Debug Mode")
 	}
+	// Health Check
+	r.GET("/health", handler.Health)
+
 	apiV1 := r.Group("/api/v1")
 	apiV1.Use(middleware.AuthRequired(config.APISecret))
-
-	// Health Check
-	apiV1.GET("/health", handler.Health)
 
 	// Metrics
 	apiV1.GET("/metrics", handler.Metrics)
