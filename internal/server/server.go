@@ -70,6 +70,7 @@ func InitializeHandler(config *config.Config) http.Handler {
 	apiV1.GET("/metrics/disk", handler.MetricsDisk)
 	apiV1.GET("/metrics/host", handler.MetricsHost)
 	apiV1.GET("/metrics/smart", handler.SmartMetrics)
+	apiV1.GET("/metrics/net", handler.MetricsNet)
 
 	return r.Handler()
 }
