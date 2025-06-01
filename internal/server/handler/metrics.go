@@ -10,6 +10,9 @@ type MetricsHandler struct {
 }
 
 func NewMetricsHandler(metadata *CaptureMeta) *MetricsHandler {
+	if metadata == nil {
+		metadata = &CaptureMeta{Version: "unknown", Mode: "unknown"}
+	}
 	return &MetricsHandler{
 		metadata: metadata,
 	}
