@@ -56,3 +56,8 @@ func (h *MetricsHandler) SmartMetrics(c *gin.Context) {
 	smartMetrics, smartErrs := metric.GetSmartMetrics()
 	h.handleResponse(c, smartMetrics, smartErrs)
 }
+
+func MetricsNet(c *gin.Context) {
+	netMetrics, netErrs := metric.GetNetInformation()
+	handleMetricResponse(c, netMetrics, netErrs)
+}

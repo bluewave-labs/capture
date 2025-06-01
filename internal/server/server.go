@@ -59,14 +59,14 @@ func InitializeHandler(config *config.Config, metadata *handler.CaptureMeta) htt
 	} else {
 		println("running in Debug Mode")
 	}
+	// Health Check
+	r.GET("/health", handler.Health)
+
 	apiV1 := r.Group("/api/v1")
 	apiV1.Use(middleware.AuthRequired(config.APISecret))
 
 	// Create metrics handler
 	metricsHandler := handler.NewMetricsHandler(metadata)
-
-	// Health Check
-	apiV1.GET("/health", handler.Health)
 
 	// Metrics
 	apiV1.GET("/metrics", metricsHandler.Metrics)
@@ -75,6 +75,7 @@ func InitializeHandler(config *config.Config, metadata *handler.CaptureMeta) htt
 	apiV1.GET("/metrics/disk", metricsHandler.MetricsDisk)
 	apiV1.GET("/metrics/host", metricsHandler.MetricsHost)
 	apiV1.GET("/metrics/smart", metricsHandler.SmartMetrics)
+  apiV1.GET("/metrics/net", metricsHandler.MetricsNet)
 
 	return r.Handler()
 }
