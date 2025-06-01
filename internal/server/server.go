@@ -54,7 +54,6 @@ func InitializeHandler(config *config.Config, metadata *handler.CaptureMeta) htt
 	// Initialize the Gin with default middlewares
 	r := gin.Default()
 	metadata.Mode = gin.Mode()
-	handler.Metadata = metadata
 	if gin.Mode() == gin.ReleaseMode {
 		println("running in Release Mode")
 	} else {
@@ -63,16 +62,19 @@ func InitializeHandler(config *config.Config, metadata *handler.CaptureMeta) htt
 	apiV1 := r.Group("/api/v1")
 	apiV1.Use(middleware.AuthRequired(config.APISecret))
 
+	// Create metrics handler
+	metricsHandler := handler.NewMetricsHandler(metadata)
+
 	// Health Check
 	apiV1.GET("/health", handler.Health)
 
 	// Metrics
-	apiV1.GET("/metrics", handler.Metrics)
-	apiV1.GET("/metrics/cpu", handler.MetricsCPU)
-	apiV1.GET("/metrics/memory", handler.MetricsMemory)
-	apiV1.GET("/metrics/disk", handler.MetricsDisk)
-	apiV1.GET("/metrics/host", handler.MetricsHost)
-	apiV1.GET("/metrics/smart", handler.SmartMetrics)
+	apiV1.GET("/metrics", metricsHandler.Metrics)
+	apiV1.GET("/metrics/cpu", metricsHandler.MetricsCPU)
+	apiV1.GET("/metrics/memory", metricsHandler.MetricsMemory)
+	apiV1.GET("/metrics/disk", metricsHandler.MetricsDisk)
+	apiV1.GET("/metrics/host", metricsHandler.MetricsHost)
+	apiV1.GET("/metrics/smart", metricsHandler.SmartMetrics)
 
 	return r.Handler()
 }
