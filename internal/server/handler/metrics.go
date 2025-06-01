@@ -60,7 +60,7 @@ func (h *MetricsHandler) SmartMetrics(c *gin.Context) {
 	h.handleResponse(c, smartMetrics, smartErrs)
 }
 
-func MetricsNet(c *gin.Context) {
+func (h *MetricsHandler) MetricsNet(c *gin.Context) {
 	netMetrics, netErrs := metric.GetNetInformation()
-	handleMetricResponse(c, netMetrics, netErrs)
+	h.handleResponse(c, netMetrics, netErrs)
 }
