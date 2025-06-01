@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/bluewave-labs/capture/internal/config"
-	"github.com/bluewave-labs/capture/internal/metric"
 	"github.com/bluewave-labs/capture/internal/server/handler"
 	"github.com/bluewave-labs/capture/internal/server/middleware"
 	"github.com/gin-gonic/gin"
@@ -18,7 +17,7 @@ import (
 
 type Server struct {
 	*http.Server
-	MetaData *metric.CaptureMeta // Metadata can be used to store additional information about the server
+	MetaData *handler.CaptureMeta // Metadata can be used to store additional information about the server
 }
 
 // Serve function starts the HTTP server and listens for incoming requests concurrently.
@@ -51,7 +50,7 @@ func (s *Server) GracefulShutdown(timeout time.Duration) {
 	}
 }
 
-func InitializeHandler(config *config.Config, metadata *metric.CaptureMeta) http.Handler {
+func InitializeHandler(config *config.Config, metadata *handler.CaptureMeta) http.Handler {
 	// Initialize the Gin with default middlewares
 	r := gin.Default()
 	metadata.Mode = gin.Mode()
@@ -78,7 +77,7 @@ func InitializeHandler(config *config.Config, metadata *metric.CaptureMeta) http
 	return r.Handler()
 }
 
-func NewServer(config *config.Config, handler http.Handler, metadata *metric.CaptureMeta) *Server {
+func NewServer(config *config.Config, handler http.Handler, metadata *handler.CaptureMeta) *Server {
 	if handler == nil {
 		handler = InitializeHandler(config, metadata)
 	}
