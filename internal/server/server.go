@@ -17,6 +17,7 @@ import (
 
 type Server struct {
 	*http.Server
+	MetaData *handler.CaptureMeta // Metadata can be used to store additional information about the server
 }
 
 // Serve function starts the HTTP server and listens for incoming requests concurrently.
@@ -49,9 +50,10 @@ func (s *Server) GracefulShutdown(timeout time.Duration) {
 	}
 }
 
-func InitializeHandler(config *config.Config) http.Handler {
+func InitializeHandler(config *config.Config, metadata *handler.CaptureMeta) http.Handler {
 	// Initialize the Gin with default middlewares
 	r := gin.Default()
+	metadata.Mode = gin.Mode()
 	if gin.Mode() == gin.ReleaseMode {
 		println("running in Release Mode")
 	} else {
@@ -63,21 +65,24 @@ func InitializeHandler(config *config.Config) http.Handler {
 	apiV1 := r.Group("/api/v1")
 	apiV1.Use(middleware.AuthRequired(config.APISecret))
 
+	// Create metrics handler
+	metricsHandler := handler.NewMetricsHandler(metadata)
+
 	// Metrics
-	apiV1.GET("/metrics", handler.Metrics)
-	apiV1.GET("/metrics/cpu", handler.MetricsCPU)
-	apiV1.GET("/metrics/memory", handler.MetricsMemory)
-	apiV1.GET("/metrics/disk", handler.MetricsDisk)
-	apiV1.GET("/metrics/host", handler.MetricsHost)
-	apiV1.GET("/metrics/smart", handler.SmartMetrics)
-	apiV1.GET("/metrics/net", handler.MetricsNet)
+	apiV1.GET("/metrics", metricsHandler.Metrics)
+	apiV1.GET("/metrics/cpu", metricsHandler.MetricsCPU)
+	apiV1.GET("/metrics/memory", metricsHandler.MetricsMemory)
+	apiV1.GET("/metrics/disk", metricsHandler.MetricsDisk)
+	apiV1.GET("/metrics/host", metricsHandler.MetricsHost)
+	apiV1.GET("/metrics/smart", metricsHandler.SmartMetrics)
+	apiV1.GET("/metrics/net", metricsHandler.MetricsNet)
 
 	return r.Handler()
 }
 
-func NewServer(config *config.Config, handler http.Handler) *Server {
+func NewServer(config *config.Config, handler http.Handler, metadata *handler.CaptureMeta) *Server {
 	if handler == nil {
-		handler = InitializeHandler(config)
+		handler = InitializeHandler(config, metadata)
 	}
 	return &Server{
 		Server: &http.Server{
@@ -85,5 +90,6 @@ func NewServer(config *config.Config, handler http.Handler) *Server {
 			Handler:           handler,
 			ReadHeaderTimeout: 5 * time.Second,
 		},
+		MetaData: metadata,
 	}
 }

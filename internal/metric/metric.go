@@ -8,11 +8,6 @@ type Metric interface {
 	isMetric()
 }
 
-type APIResponse struct {
-	Data   Metric      `json:"data"`
-	Errors []CustomErr `json:"errors"`
-}
-
 type SmartData struct {
 	AvailableSpare           string `json:"available_spare"`
 	AvailableSpareThreshold  string `json:"available_spare_threshold"`

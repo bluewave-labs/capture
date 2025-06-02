@@ -5,48 +5,62 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func handleMetricResponse(c *gin.Context, metrics metric.Metric, errs []metric.CustomErr) {
+type MetricsHandler struct {
+	metadata *CaptureMeta
+}
+
+func NewMetricsHandler(metadata *CaptureMeta) *MetricsHandler {
+	if metadata == nil {
+		metadata = &CaptureMeta{Version: "unknown", Mode: "unknown"}
+	}
+	return &MetricsHandler{
+		metadata: metadata,
+	}
+}
+
+func (h *MetricsHandler) handleResponse(c *gin.Context, metrics metric.Metric, errs []metric.CustomErr) {
 	statusCode := 200
 	if len(errs) > 0 {
 		statusCode = 207
 	}
-	c.JSON(statusCode, metric.APIResponse{
-		Data:   metrics,
-		Errors: errs,
+	c.JSON(statusCode, APIResponse{
+		Data:    metrics,
+		Errors:  errs,
+		Capture: *h.metadata,
 	})
 }
 
-func Metrics(c *gin.Context) {
+func (h *MetricsHandler) Metrics(c *gin.Context) {
 	metrics, metricsErrs := metric.GetAllSystemMetrics()
-	handleMetricResponse(c, metrics, metricsErrs)
+	h.handleResponse(c, metrics, metricsErrs)
 }
 
-func MetricsCPU(c *gin.Context) {
+func (h *MetricsHandler) MetricsCPU(c *gin.Context) {
 	cpuMetrics, metricsErrs := metric.CollectCPUMetrics()
-	handleMetricResponse(c, cpuMetrics, metricsErrs)
+	h.handleResponse(c, cpuMetrics, metricsErrs)
 }
 
-func MetricsMemory(c *gin.Context) {
+func (h *MetricsHandler) MetricsMemory(c *gin.Context) {
 	memoryMetrics, metricsErrs := metric.CollectMemoryMetrics()
-	handleMetricResponse(c, memoryMetrics, metricsErrs)
+	h.handleResponse(c, memoryMetrics, metricsErrs)
 }
 
-func MetricsDisk(c *gin.Context) {
+func (h *MetricsHandler) MetricsDisk(c *gin.Context) {
 	diskMetrics, metricsErrs := metric.CollectDiskMetrics()
-	handleMetricResponse(c, diskMetrics, metricsErrs)
+	h.handleResponse(c, diskMetrics, metricsErrs)
 }
 
-func MetricsHost(c *gin.Context) {
+func (h *MetricsHandler) MetricsHost(c *gin.Context) {
 	hostMetrics, metricsErrs := metric.GetHostInformation()
-	handleMetricResponse(c, hostMetrics, metricsErrs)
+	h.handleResponse(c, hostMetrics, metricsErrs)
 }
 
-func SmartMetrics(c *gin.Context) {
+func (h *MetricsHandler) SmartMetrics(c *gin.Context) {
 	smartMetrics, smartErrs := metric.GetSmartMetrics()
-	handleMetricResponse(c, smartMetrics, smartErrs)
+	h.handleResponse(c, smartMetrics, smartErrs)
 }
 
-func MetricsNet(c *gin.Context) {
+func (h *MetricsHandler) MetricsNet(c *gin.Context) {
 	netMetrics, netErrs := metric.GetNetInformation()
-	handleMetricResponse(c, netMetrics, netErrs)
+	h.handleResponse(c, netMetrics, netErrs)
 }
