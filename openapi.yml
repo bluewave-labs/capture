@@ -473,7 +473,7 @@ components:
         power_on_hours:
           type: string
           example: "1000"
-        smart_overall-health_self-assessment_test_result:
+        smart_overall_health_self_assessment_test_result:
           type: string
           example: "PASSED"
         temperature:
