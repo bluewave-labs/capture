@@ -2,35 +2,42 @@ package metric
 
 import (
 	"context"
-	"log"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 )
 
 type ContainerMetrics struct {
-	ContainerID   string
-	ContainerName string
-	Healthy       bool
-	BaseImage     string
-	ExposedPorts  []Port
-	StartedAt     string
-	FinishedAt    string
+	ContainerID   string `json:"container_id"`
+	ContainerName string `json:"container_name"`
+	Healthy       bool   `json:"healthy"`
+	BaseImage     string `json:"base_image"`
+	ExposedPorts  []Port `json:"exposed_ports"`
+	StartedAt     string `json:"started_at"`
+	FinishedAt    string `json:"finished_at"`
 }
+
+func (c ContainerMetrics) isMetric() {}
 
 type Port struct {
-	Port     string
-	Protocol string
+	Port     string `json:"port"`
+	Protocol string `json:"protocol"`
 }
 
-func GetDockerMetrics(all bool) []ContainerMetrics {
-	var metrics = make([]ContainerMetrics, 0)
+func GetDockerMetrics(all bool) (MetricsSlice, []CustomErr) {
+	var metrics = make(MetricsSlice, 0)
+	var containerErrors []CustomErr
+
 	ctx := context.Background()
 
 	// Initialize the Docker client
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		log.Fatalf("Failed to create Docker client: %v", err)
+		containerErrors = append(containerErrors, CustomErr{
+			Metric: []string{"docker.client"},
+			Error:  err.Error(),
+		})
+		return nil, containerErrors
 	}
 	defer cli.Close()
 
@@ -39,14 +46,16 @@ func GetDockerMetrics(all bool) []ContainerMetrics {
 		All: all,
 	})
 	if err != nil {
-		log.Fatalf("Failed to list containers: %v", err)
+		return nil, append(containerErrors, CustomErr{
+			Metric: []string{"docker.container.list"},
+			Error:  err.Error(),
+		})
 	}
 
 	for _, container := range containers {
 		// Inspect each container
 		containerInspectResponse, err := cli.ContainerInspect(ctx, container.ID)
 		if err != nil {
-			log.Printf("Failed to inspect container %s: %v", container.ID, err)
 			continue
 		}
 
@@ -70,7 +79,7 @@ func GetDockerMetrics(all bool) []ContainerMetrics {
 		})
 	}
 
-	return metrics
+	return metrics, nil
 }
 
 func healthCheck(inspectResponse container.InspectResponse) bool {

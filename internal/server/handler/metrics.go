@@ -64,3 +64,8 @@ func (h *MetricsHandler) MetricsNet(c *gin.Context) {
 	netMetrics, netErrs := metric.GetNetInformation()
 	h.handleResponse(c, netMetrics, netErrs)
 }
+
+func (h *MetricsHandler) MetricsDocker(c *gin.Context) {
+	dockerMetrics, dockerErrs := metric.GetDockerMetrics(true)
+	h.handleResponse(c, dockerMetrics, dockerErrs)
+}
