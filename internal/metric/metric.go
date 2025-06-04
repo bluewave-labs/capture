@@ -20,7 +20,7 @@ type SmartData struct {
 	PercentageUsed           string `json:"percentage_used"`
 	PowerCycles              string `json:"power_cycles"`
 	PowerOnHours             string `json:"power_on_hours"`
-	SmartOverallHealthResult string `json:"smart_overall-health_self-assessment_test_result"`
+	SmartOverallHealthResult string `json:"smart_overall_health_self_assessment_test_result"`
 	Temperature              string `json:"temperature"`
 	UnsafeShutdowns          string `json:"unsafe_shutdowns"`
 }
