@@ -2,12 +2,12 @@ openapi: 3.0.0
 info:
   title: Capture
   description: OpenAPI Specifications for the Capture's API
-  version: 1.0.0
+  version: 1.1.0
   license:
     name: AGPL-3.0
     url: https://github.com/bluewave-labs/capture/blob/develop/LICENSE
 servers:
-  - url: http://localhost:{PORT}{API_PATH}
+  - url: http://localhost:{PORT}
     description: Local development server
     variables:
       PORT:
@@ -15,11 +15,6 @@ servers:
         description: Port number
         enum:
           - '59232'
-      API_PATH:
-        default: /api/v1
-        description: API path
-        enum:
-          - /api/v1
 paths:
   /health:
     get:
@@ -32,9 +27,7 @@ paths:
               schema:
                 type: string
                 example: "OK"
-      security:
-          - bearerAuth: []
-  /metrics:
+  /api/v1/metrics:
     get:
       summary: Read server data
       responses:
@@ -52,7 +45,7 @@ paths:
                 $ref: '#/components/schemas/AllMetricResponse'
       security:
         - bearerAuth: []
-  /metrics/cpu:
+  /api/v1/metrics/cpu:
     get:
       summary: Read CPU data
       responses:
@@ -69,8 +62,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/CPUMetricResponse'
       security:
-          - bearerAuth: []
-  /metrics/memory:
+        - bearerAuth: []
+  /api/v1/metrics/memory:
     get:
       summary: Read Memory data
       responses:
@@ -87,8 +80,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/MemoryMetricResponse'
       security:
-          - bearerAuth: []
-  /metrics/disk:
+        - bearerAuth: []
+  /api/v1/metrics/disk:
     get:
       summary: Read Disk data
       responses:
@@ -105,8 +98,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/DiskMetricResponse'
       security:
-          - bearerAuth: []
-  /metrics/host:
+        - bearerAuth: []
+  /api/v1/metrics/host:
     get:
       summary: Read Host data
       responses:
@@ -123,7 +116,43 @@ paths:
               schema:
                 $ref: '#/components/schemas/HostMetricResponse'
       security:
-          - bearerAuth: []
+        - bearerAuth: []
+  /api/v1/metrics/smart:
+    get:
+      summary: Read S.M.A.R.T. data
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmartMetricResponse'
+        '207':
+          description: Multi-Status | Some of the data is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmartMetricResponse'
+      security:
+        - bearerAuth: []
+  /api/v1/metrics/net:
+    get:
+      summary: Read Network data
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkMetricResponse'
+        '207':
+          description: Multi-Status | Some of the data is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkMetricResponse'
+      security:
+        - bearerAuth: []
 components:
   securitySchemes:
     bearerAuth:
@@ -147,6 +176,12 @@ components:
                 $ref: '#/components/schemas/DiskData'
             host:
               $ref: '#/components/schemas/HostData'
+            net:
+              type: array
+              items:
+                $ref: '#/components/schemas/NetData'
+        capture:
+          $ref: '#/components/schemas/CaptureMetadata'
         errors:
           type: array
           nullable: true
@@ -157,6 +192,8 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/CPUData'
+        capture:
+          $ref: '#/components/schemas/CaptureMetadata'
         errors:
           type: array
           nullable: true
@@ -167,6 +204,8 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/MemoryData'
+        capture:
+          $ref: '#/components/schemas/CaptureMetadata'
         errors:
           type: array
           nullable: true
@@ -179,6 +218,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DiskData'
+        capture:
+          $ref: '#/components/schemas/CaptureMetadata'
         errors:
           type: array
           nullable: true
@@ -189,6 +230,8 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/HostData'
+        capture:
+          $ref: '#/components/schemas/CaptureMetadata'
         errors:
           type: array
           nullable: true
@@ -238,13 +281,62 @@ components:
           example: "/dev/sda1"
         total_bytes:
           type: integer
-          example: 1024
+          format: uint64
+          nullable: true
+          example: 1099511627776
         free_bytes:
           type: integer
-          example: 512
+          format: uint64
+          nullable: true
+          example: 549755813888
+        used_bytes:
+          type: integer
+          format: uint64
+          nullable: true
+          example: 549755813888
         usage_percent:
           type: number
-          example: 0.5
+          nullable: true
+          example: 50.0
+        total_inodes:
+          type: integer
+          format: uint64
+          nullable: true
+          example: 1000000
+        free_inodes:
+          type: integer
+          format: uint64
+          nullable: true
+          example: 500000
+        used_inodes:
+          type: integer
+          format: uint64
+          nullable: true
+          example: 500000
+        inodes_usage_percent:
+          type: number
+          nullable: true
+          example: 50.0
+        read_bytes:
+          type: integer
+          format: uint64
+          nullable: true
+          example: 1024000
+        write_bytes:
+          type: integer
+          format: uint64
+          nullable: true
+          example: 512000
+        read_time:
+          type: integer
+          format: uint64
+          nullable: true
+          example: 1000
+        write_time:
+          type: integer
+          format: uint64
+          nullable: true
+          example: 500
     HostData:
       type: object
       properties:
@@ -262,7 +354,131 @@ components:
       properties:
         metric:
           type: string
-          example: "cpu.temperature"
         error:
           type: string
-          example: "unable to get cpu temperature"
+    NetworkMetricResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/NetData'
+        capture:
+          $ref: '#/components/schemas/CaptureMetadata'
+        errors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MetricErrorObject'
+    SmartMetricResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SmartData'
+        capture:
+          $ref: '#/components/schemas/CaptureMetadata'
+        errors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MetricErrorObject'
+    CaptureMetadata:
+      type: object
+      properties:
+        version:
+          type: string
+        mode:
+          type: string
+    NetData:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "eth0"
+        bytes_sent:
+          type: integer
+          format: uint64
+          example: 1024
+        bytes_recv:
+          type: integer
+          format: uint64
+          example: 2048
+        packets_sent:
+          type: integer
+          format: uint64
+          example: 100
+        packets_recv:
+          type: integer
+          format: uint64
+          example: 200
+        err_in:
+          type: integer
+          format: uint64
+          example: 0
+        err_out:
+          type: integer
+          format: uint64
+          example: 0
+        drop_in:
+          type: integer
+          format: uint64
+          example: 0
+        drop_out:
+          type: integer
+          format: uint64
+          example: 0
+        fifo_in:
+          type: integer
+          format: uint64
+          example: 0
+        fifo_out:
+          type: integer
+          format: uint64
+          example: 0
+    SmartData:
+      type: object
+      properties:
+        available_spare:
+          type: string
+          example: "100%"
+        available_spare_threshold:
+          type: string
+          example: "10%"
+        controller_busy_time:
+          type: string
+          example: "0"
+        critical_warning:
+          type: string
+          example: "0"
+        data_units_read:
+          type: string
+          example: "1234567"
+        data_units_written:
+          type: string
+          example: "7654321"
+        host_read_commands:
+          type: string
+          example: "100000"
+        host_write_commands:
+          type: string
+          example: "50000"
+        percentage_used:
+          type: string
+          example: "5"
+        power_cycles:
+          type: string
+          example: "100"
+        power_on_hours:
+          type: string
+          example: "1000"
+        smart_overall-health_self-assessment_test_result:
+          type: string
+          example: "PASSED"
+        temperature:
+          type: string
+          example: "35C"
+        unsafe_shutdowns:
+          type: string
+          example: "0"
