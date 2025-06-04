@@ -27,8 +27,6 @@ paths:
               schema:
                 type: string
                 example: "OK"
-      security:
-        - bearerAuth: []
   /api/v1/metrics:
     get:
       summary: Read server data
