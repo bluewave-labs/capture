@@ -28,7 +28,7 @@ paths:
                 type: string
                 example: "OK"
       security:
-          - bearerAuth: []
+        - bearerAuth: []
   /api/v1/metrics:
     get:
       summary: Read server data
@@ -64,7 +64,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/CPUMetricResponse'
       security:
-          - bearerAuth: []
+        - bearerAuth: []
   /api/v1/metrics/memory:
     get:
       summary: Read Memory data
@@ -82,7 +82,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MemoryMetricResponse'
       security:
-          - bearerAuth: []
+        - bearerAuth: []
   /api/v1/metrics/disk:
     get:
       summary: Read Disk data
@@ -100,7 +100,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DiskMetricResponse'
       security:
-          - bearerAuth: []
+        - bearerAuth: []
   /api/v1/metrics/host:
     get:
       summary: Read Host data
@@ -118,7 +118,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/HostMetricResponse'
       security:
-          - bearerAuth: []
+        - bearerAuth: []
   /api/v1/metrics/smart:
     get:
       summary: Read S.M.A.R.T. data
@@ -136,7 +136,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SmartMetricResponse'
       security:
-          - bearerAuth: []
+        - bearerAuth: []
   /api/v1/metrics/net:
     get:
       summary: Read Network data
@@ -154,7 +154,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/NetworkMetricResponse'
       security:
-          - bearerAuth: []
+        - bearerAuth: []
 components:
   securitySchemes:
     bearerAuth:
