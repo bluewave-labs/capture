@@ -7,7 +7,7 @@ info:
     name: AGPL-3.0
     url: https://github.com/bluewave-labs/capture/blob/develop/LICENSE
 servers:
-  - url: http://localhost:{PORT}/api/v1
+  - url: http://localhost:{PORT}
     description: Local development server
     variables:
       PORT:
