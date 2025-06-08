@@ -87,17 +87,13 @@ func GetDockerMetrics(all bool) (MetricsSlice, []CustomErr) {
 }
 
 func healthCheck(inspectResponse container.InspectResponse) bool {
-	var healthStatus bool
-
-	if inspectResponse.State.OOMKilled || inspectResponse.State.Dead || inspectResponse.State.ExitCode != 0 || inspectResponse.State.Status != "running" {
-		healthStatus = false
+	// Check for explicit failure conditions first
+	if inspectResponse.State.OOMKilled || inspectResponse.State.Dead || inspectResponse.State.ExitCode != 0 {
+		return false
 	}
 
-	if inspectResponse.State != nil && inspectResponse.State.Running {
-		healthStatus = true
-	}
-
-	return healthStatus
+	// Only consider healthy if running and status is "running"
+	return inspectResponse.State != nil && inspectResponse.State.Running && inspectResponse.State.Status == "running"
 }
 
 // getContainerName extracts the container name from the list of names.
