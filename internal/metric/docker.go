@@ -72,7 +72,7 @@ func GetDockerMetrics(all bool) (MetricsSlice, []CustomErr) {
 
 		metrics = append(metrics, ContainerMetrics{
 			ContainerID:   container.ID,
-			ContainerName: container.Names[0],
+			ContainerName: getContainerName(container.Names),
 			Healthy:       healthy,
 			Status:        containerInspectResponse.State.Status, // Can be one of "created", "running", "paused", "restarting", "removing", "exited", or "dead"
 			Running:       containerInspectResponse.State.Running,
@@ -98,4 +98,13 @@ func healthCheck(inspectResponse container.InspectResponse) bool {
 	}
 
 	return healthStatus
+}
+
+// getContainerName extracts the container name from the list of names.
+func getContainerName(names []string) string {
+	if len(names) == 0 {
+		return ""
+	}
+	// Remove the leading '/' from the container name
+	return names[0][1:]
 }
