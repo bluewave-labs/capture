@@ -11,6 +11,8 @@ type ContainerMetrics struct {
 	ContainerID   string `json:"container_id"`
 	ContainerName string `json:"container_name"`
 	Healthy       bool   `json:"healthy"`
+	Status        string `json:"status"` // "created", "running", "paused", "restarting", "removing", "exited", "dead"
+	Running       bool   `json:"running"`
 	BaseImage     string `json:"base_image"`
 	ExposedPorts  []Port `json:"exposed_ports"`
 	StartedAt     string `json:"started_at"`
@@ -72,6 +74,8 @@ func GetDockerMetrics(all bool) (MetricsSlice, []CustomErr) {
 			ContainerID:   container.ID,
 			ContainerName: container.Names[0],
 			Healthy:       healthy,
+			Status:        containerInspectResponse.State.Status, // Can be one of "created", "running", "paused", "restarting", "removing", "exited", or "dead"
+			Running:       containerInspectResponse.State.Running,
 			BaseImage:     container.Image,
 			ExposedPorts:  portList,
 			StartedAt:     containerInspectResponse.State.StartedAt,
