@@ -66,6 +66,10 @@ func (h *MetricsHandler) MetricsNet(c *gin.Context) {
 }
 
 func (h *MetricsHandler) MetricsDocker(c *gin.Context) {
-	dockerMetrics, dockerErrs := metric.GetDockerMetrics(true)
+	all := c.Query("all") == "true"
+
+	// Get Docker metrics, passing the "all" flag from the context
+	// This will include all containers if "all" is true, otherwise only running containers
+	dockerMetrics, dockerErrs := metric.GetDockerMetrics(all)
 	h.handleResponse(c, dockerMetrics, dockerErrs)
 }
