@@ -2,6 +2,7 @@ package metric
 
 import (
 	"context"
+	"time"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -15,8 +16,8 @@ type ContainerMetrics struct {
 	Running       bool   `json:"running"`
 	BaseImage     string `json:"base_image"`
 	ExposedPorts  []Port `json:"exposed_ports"`
-	StartedAt     string `json:"started_at"`
-	FinishedAt    string `json:"finished_at"`
+	StartedAt     int64  `json:"started_at"`  // Unix timestamp
+	FinishedAt    int64  `json:"finished_at"` // Unix timestamp
 }
 
 func (c ContainerMetrics) isMetric() {}
@@ -61,7 +62,6 @@ func GetDockerMetrics(all bool) (MetricsSlice, []CustomErr) {
 			continue
 		}
 
-		healthy := healthCheck(containerInspectResponse)
 		portList := make([]Port, 0)
 		for port := range containerInspectResponse.Config.ExposedPorts {
 			portList = append(portList, Port{
@@ -73,13 +73,13 @@ func GetDockerMetrics(all bool) (MetricsSlice, []CustomErr) {
 		metrics = append(metrics, ContainerMetrics{
 			ContainerID:   container.ID,
 			ContainerName: getContainerName(container.Names),
-			Healthy:       healthy,
+			Healthy:       healthCheck(containerInspectResponse),
 			Status:        containerInspectResponse.State.Status, // Can be one of "created", "running", "paused", "restarting", "removing", "exited", or "dead"
 			Running:       containerInspectResponse.State.Running,
 			BaseImage:     container.Image,
 			ExposedPorts:  portList,
-			StartedAt:     containerInspectResponse.State.StartedAt,
-			FinishedAt:    containerInspectResponse.State.FinishedAt,
+			StartedAt:     getUnixTimestamp(containerInspectResponse.State.StartedAt),
+			FinishedAt:    getUnixTimestamp(containerInspectResponse.State.FinishedAt),
 		})
 	}
 
@@ -103,4 +103,13 @@ func getContainerName(names []string) string {
 	}
 	// Remove the leading '/' from the container name
 	return names[0][1:]
+}
+
+func getUnixTimestamp(timestamp string) int64 {
+	// Convert the timestamp string to a Unix timestamp
+	t, err := time.Parse(time.RFC3339, timestamp)
+	if err != nil {
+		return 0 // Return 0 if parsing fails
+	}
+	return t.Unix()
 }
