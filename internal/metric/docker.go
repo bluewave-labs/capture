@@ -9,15 +9,15 @@ import (
 )
 
 type ContainerMetrics struct {
-	ContainerID   string `json:"container_id"`
-	ContainerName string `json:"container_name"`
-	Healthy       bool   `json:"healthy"`
-	Status        string `json:"status"` // "created", "running", "paused", "restarting", "removing", "exited", "dead"
-	Running       bool   `json:"running"`
-	BaseImage     string `json:"base_image"`
-	ExposedPorts  []Port `json:"exposed_ports"`
-	StartedAt     int64  `json:"started_at"`  // Unix timestamp
-	FinishedAt    int64  `json:"finished_at"` // Unix timestamp
+	ContainerID   string                 `json:"container_id"`
+	ContainerName string                 `json:"container_name"`
+	Status        string                 `json:"status"` // "created", "running", "paused", "restarting", "removing", "exited", "dead"
+	Health        *ContainerHealthStatus `json:"health"`
+	Running       bool                   `json:"running"`
+	BaseImage     string                 `json:"base_image"`
+	ExposedPorts  []Port                 `json:"exposed_ports"`
+	StartedAt     int64                  `json:"started_at"`  // Unix timestamp
+	FinishedAt    int64                  `json:"finished_at"` // Unix timestamp
 }
 
 func (c ContainerMetrics) isMetric() {}
@@ -26,6 +26,19 @@ type Port struct {
 	Port     string `json:"port"`
 	Protocol string `json:"protocol"`
 }
+
+type ContainerHealthStatus struct {
+	Healthy bool                  `json:"healthy"`
+	Source  ContainerHealthSource `json:"source"`  // "container_health_check", "state_based_health_check"
+	Message string                `json:"message"` // Additional message if needed
+}
+
+type ContainerHealthSource string
+
+const (
+	SourceContainerHealthCheck  ContainerHealthSource = "container_health_check"
+	SourceStateBasedHealthCheck ContainerHealthSource = "state_based_health_check"
+)
 
 func GetDockerMetrics(all bool) (MetricsSlice, []CustomErr) {
 	var metrics = make(MetricsSlice, 0)
@@ -73,20 +86,20 @@ func GetDockerMetrics(all bool) (MetricsSlice, []CustomErr) {
 		metrics = append(metrics, ContainerMetrics{
 			ContainerID:   container.ID,
 			ContainerName: getContainerName(container.Names),
-			Healthy:       healthCheck(containerInspectResponse),
 			Status:        containerInspectResponse.State.Status, // Can be one of "created", "running", "paused", "restarting", "removing", "exited", or "dead"
 			Running:       containerInspectResponse.State.Running,
 			BaseImage:     container.Image,
 			ExposedPorts:  portList,
-			StartedAt:     getUnixTimestamp(containerInspectResponse.State.StartedAt),
-			FinishedAt:    getUnixTimestamp(containerInspectResponse.State.FinishedAt),
+			StartedAt:     GetUnixTimestamp(containerInspectResponse.State.StartedAt),
+			FinishedAt:    GetUnixTimestamp(containerInspectResponse.State.FinishedAt),
+			Health:        healthCheck(containerInspectResponse),
 		})
 	}
 
 	return metrics, nil
 }
 
-func healthCheck(inspectResponse container.InspectResponse) bool {
+func stateBasedHealthCheck(inspectResponse container.InspectResponse) bool {
 	// Check for explicit failure conditions first
 	if inspectResponse.State.OOMKilled || inspectResponse.State.Dead || inspectResponse.State.ExitCode != 0 {
 		return false
@@ -94,6 +107,31 @@ func healthCheck(inspectResponse container.InspectResponse) bool {
 
 	// Only consider healthy if running and status is "running"
 	return inspectResponse.State != nil && inspectResponse.State.Running && inspectResponse.State.Status == "running"
+}
+
+// healthCheck returns the health status of a container based on its inspection response.
+// If there is health check information available, it returns the health status.
+// If not, it runs a state based health check based on the container's state.
+// If the container is running and healthy, it returns a healthy status.
+// If the container is not running or has failed, it returns an unhealthy status.
+// If the container is starting, it returns 'healthy' status.
+func healthCheck(inspectResponse container.InspectResponse) *ContainerHealthStatus {
+	if inspectResponse.State.Health != nil {
+		// If the container has a health check, return its status
+		return &ContainerHealthStatus{
+			// If the health check is healthy or starting, consider it healthy
+			Healthy: inspectResponse.State.Health.Status == "healthy" || inspectResponse.State.Health.Status == "starting",
+			Source:  SourceContainerHealthCheck,
+			Message: "Based on container health check",
+		}
+	}
+
+	// If no health check is defined, run state based health check
+	return &ContainerHealthStatus{
+		Healthy: stateBasedHealthCheck(inspectResponse),
+		Source:  SourceStateBasedHealthCheck,
+		Message: "Based on container state",
+	}
 }
 
 // getContainerName extracts the container name from the list of names.
@@ -105,11 +143,11 @@ func getContainerName(names []string) string {
 	return names[0][1:]
 }
 
-func getUnixTimestamp(timestamp string) int64 {
+func GetUnixTimestamp(timestamp string) int64 {
 	// Convert the timestamp string to a Unix timestamp
 	t, err := time.Parse(time.RFC3339, timestamp)
-	if err != nil {
-		return 0 // Return 0 if parsing fails
+	if err != nil || timestamp == "0001-01-01T00:00:00Z" {
+		return 0 // Return 0 if parsing fails or if the timestamp is the zero value
 	}
 	return t.Unix()
 }
