@@ -136,11 +136,16 @@ func healthCheck(inspectResponse container.InspectResponse) *ContainerHealthStat
 
 // getContainerName extracts the container name from the list of names.
 func getContainerName(names []string) string {
-	if len(names) == 0 {
+	if len(names) == 0 || len(names[0]) == 0 {
+		// If there are no names or the first name is empty, return an empty string
 		return ""
 	}
-	// Remove the leading '/' from the container name
-	return names[0][1:]
+
+	if names[0][0] == '/' {
+		return names[0][1:] // Remove the leading '/' from the container name
+	}
+
+	return names[0]
 }
 
 func GetUnixTimestamp(timestamp string) int64 {
