@@ -156,9 +156,12 @@ func getContainerName(names []string) string {
 	return names[0]
 }
 
+// GetUnixTimestamp converts a timestamp string in RFC3339 format to a Unix timestamp.
+// If the timestamp is invalid or represents the zero value, it returns 0.
+// The function handles both seconds and nanoseconds precision.
 func GetUnixTimestamp(timestamp string) int64 {
 	// Convert the timestamp string to a Unix timestamp
-	t, err := time.Parse(time.RFC3339, timestamp)
+	t, err := time.Parse(time.RFC3339Nano, timestamp)
 	if err != nil || timestamp == "0001-01-01T00:00:00Z" {
 		return 0 // Return 0 if parsing fails or if the timestamp is the zero value
 	}
