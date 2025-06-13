@@ -72,6 +72,10 @@ func GetDockerMetrics(all bool) (MetricsSlice, []CustomErr) {
 		// Inspect each container
 		containerInspectResponse, err := cli.ContainerInspect(ctx, container.ID)
 		if err != nil {
+			containerErrors = append(containerErrors, CustomErr{
+				Metric: []string{"docker.container.inspect"},
+				Error:  err.Error(),
+			})
 			continue
 		}
 
@@ -100,6 +104,10 @@ func GetDockerMetrics(all bool) (MetricsSlice, []CustomErr) {
 }
 
 func stateBasedHealthCheck(inspectResponse container.InspectResponse) bool {
+	if inspectResponse.State == nil {
+		// If the state is nil, we cannot determine health
+		return false
+	}
 	// Check for explicit failure conditions first
 	if inspectResponse.State.OOMKilled || inspectResponse.State.Dead || inspectResponse.State.ExitCode != 0 {
 		return false
