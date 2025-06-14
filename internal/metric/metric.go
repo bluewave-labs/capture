@@ -85,6 +85,7 @@ type HostData struct {
 	Os            string `json:"os"`             // Operating System
 	Platform      string `json:"platform"`       // Platform Name
 	KernelVersion string `json:"kernel_version"` // Kernel Version
+	PrettyName    string `json:"pretty_name"`    // Pretty OS Name from /etc/os-release
 }
 
 func (h HostData) isMetric() {}
