@@ -26,11 +26,11 @@ docker run -d \
 
 ## Configuration
 
-| Variable     | Description                          | Default | Required |
-| ------------ | ------------------------------------ | ------- | -------- |
-| `API_SECRET` | Authentication key (must match Checkmate dashboard) | - | Yes |
-| `PORT`       | Server port number                   | 59232   | No       |
-| `GIN_MODE`   | Framework mode (release/debug)       | debug   | No       |
+| Variable     | Description                                                                                                                                                         | Default | Required |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------- |
+| `API_SECRET` | Authentication key ([Must match the secret you enter on Checkmate](https://docs.checkmate.so/users-guide/infrastructure-monitor#step-2-configure-general-settings)) | -       | Yes      |
+| `PORT`       | Server port number                                                                                                                                                  | 59232   | No       |
+| `GIN_MODE`   | Gin(web framework) mode. Debug is for development                                                                                                                                  | release | No       |
 
 Example configurations:
 
