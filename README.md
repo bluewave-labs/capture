@@ -14,139 +14,81 @@
 
 Capture is a hardware monitoring agent that collects hardware information from the host machine and exposes it through a RESTful API. The agent is designed to be lightweight and easy to use.
 
-## Docker Installation
-
-Docker installation is **recommended** for running the Capture. Please see the [Docker run flags](#docker-run-flags) section for more information.
-
-Pull the image from the registry and then run it with one command.
+## Quick Start (Docker)
 
 ```shell
-docker run -v /etc/os-release:/etc/os-release:ro \
+docker run -d \
+    -v /etc/os-release:/etc/os-release:ro \
     -p 59232:59232 \
-    -e API_SECRET=REPLACE_WITH_YOUR_SECRET \
-    -d \
+    -e API_SECRET=your-secret-key \
     ghcr.io/bluewave-labs/capture:latest
 ```
 
-If you don't want to pull the image, you can build and run it locally.
+## Configuration
+
+| Variable     | Description                                                                                                                                                         | Default | Required |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------- |
+| `API_SECRET` | Authentication key ([Must match the secret you enter on Checkmate](https://docs.checkmate.so/users-guide/infrastructure-monitor#step-2-configure-general-settings)) | -       | Yes      |
+| `PORT`       | Server port number                                                                                                                                                  | 59232   | No       |
+| `GIN_MODE`   | Gin(web framework) mode. Debug is for development                                                                                                                                  | release | No       |
+
+Example configurations:
 
 ```shell
-docker buildx build -f Dockerfile -t capture .
+# Minimal
+API_SECRET=your-secret-key ./capture
+
+# Complete
+API_SECRET=your-secret-key PORT=59232 GIN_MODE=release ./capture
 ```
 
-```shell
-docker run -v /etc/os-release:/etc/os-release:ro \
-    -p 59232:59232 \
-    -e API_SECRET=REPLACE_WITH_YOUR_SECRET \
-    -d \
-    capture:latest
-```
+## Installation Options
 
-### Docker run flags
+### Docker (Recommended)
 
-Before running the container, please make sure to replace the `REPLACE_WITH_YOUR_SECRET` with your own secret.
-
-! **You need to put this secret to Checkmate's infrastructure monitoring dashboard**
-
-- `-v /etc/os-release:/etc/os-release:ro` to get platform information correctly
-- `-p 59232:59232` to expose the port 59232
-- `-d` to run the container in detached mode
-- `-e API_SECRET=REPLACE_WITH_YOUR_SECRET` to set the API secret
-- (optional) `-e GIN_MODE=release/debug` to switch between release and debug mode
+Pull and run the official image:
 
 ```shell
-docker run -v /etc/os-release:/etc/os-release:ro \
+docker run -d \
+    -v /etc/os-release:/etc/os-release:ro \
     -p 59232:59232 \
-    -e API_SECRET=REPLACE_WITH_YOUR_SECRET \
-    -d \
+    -e API_SECRET=your-secret-key \
     ghcr.io/bluewave-labs/capture:latest
 ```
+
+Or build locally:
+
+```shell
+docker buildx build -t capture .
+docker run -d -v /etc/os-release:/etc/os-release:ro -p 59232:59232 -e API_SECRET=your-secret-key capture
+```
+
+Docker options explained:
+
+- `-v /etc/os-release:/etc/os-release:ro`: Platform detection
+- `-p 59232:59232`: Port mapping
+- `-e API_SECRET`: Required authentication key
+- `-d`: Detached mode
 
 ## System Installation
 
-### Pre-built Binaries
+Choose one of these methods:
 
-You can download the pre-built binaries from the [GitHub Releases](https://github.com/bluewave-labs/capture/releases) page.
+1. **Pre-built Binaries**: Download from [GitHub Releases](https://github.com/bluewave-labs/capture/releases)
 
-### Go Package
+2. **Go Package**:
 
-You can install the Capture using the `go install` command.
+   ```shell
+   go install github.com/bluewave-labs/capture/cmd/capture@latest
+   ```
 
-```shell
-go install github.com/bluewave-labs/capture/cmd/capture@latest
-```
+3. **Build from Source**:
 
-### Build from Source
-
-You can build the Capture from the source code.
-
-#### Prerequisites
-
-- [Git](https://git-scm.com/downloads) is essential for cloning the repository.
-- [Go](https://go.dev/dl/) is required to build the project.
-- [Just](https://github.com/casey/just/releases) is optional but **recommended** for building the project with pre-defined commands.
-
-#### Steps
-
-1. Clone the repository
-
-    ```shell
-    git clone git@github.com:bluewave-labs/capture
-    ```
-
-2. Change the directory
-
-    ```shell
-    cd capture
-    ```
-
-3. Build the Capture
-
-    ```shell
-    just build
-    ```
-
-    or
-
-    ```shell
-    go build -o dist/capture ./cmd/capture/
-    ```
-
-4. Run the Capture
-
-    ```shell
-    ./dist/capture
-    ```
-
-## Environment Variables
-
-Configure the capture with the following environment variables:
-
-| Variable     | Description                          | Required/Optional |
-| ------------ | ------------------------------------ | ----------------- |
-| `PORT`       | The port that the Capture listens on | Optional          |
-| `API_SECRET` | The secret key for the API           | Required          |
-| `GIN_MODE`   | The mode of the Gin framework        | Optional          |
-
-### Example
-
-Please make sure to replace the default `your_secret` with your own secret.
-
-! **You need to put this secret to Checkmate's infrastructure monitoring dashboard**
-
-```shell
-PORT = your_port
-API_SECRET = your_secret
-GIN_MODE = release/debug
-```
-
-```shell
-# API_SECRET is required
-API_SECRET=your_secret GIN_MODE=release ./capture
-
-# Minimal required configuration
-API_SECRET=your_secret ./dist/capture
-```
+   ```shell
+   git clone git@github.com:bluewave-labs/capture
+   cd capture
+   just build   # or: go build -o dist/capture ./cmd/capture/
+   ```
 
 ## API Documentation
 
