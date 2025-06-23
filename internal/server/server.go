@@ -76,6 +76,7 @@ func InitializeHandler(config *config.Config, metadata *handler.CaptureMeta) htt
 	apiV1.GET("/metrics/host", metricsHandler.MetricsHost)
 	apiV1.GET("/metrics/smart", metricsHandler.SmartMetrics)
 	apiV1.GET("/metrics/net", metricsHandler.MetricsNet)
+	apiV1.GET("/metrics/docker", metricsHandler.MetricsDocker)
 
 	return r.Handler()
 }
