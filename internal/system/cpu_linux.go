@@ -1,4 +1,7 @@
-package sysfs
+//go:build linux
+// +build linux
+
+package system
 
 import (
 	"errors"
@@ -36,6 +39,7 @@ func readCPUFreqFile(path string) (int, error) {
 	return freq, nil
 }
 
+// CPUTemperature returns the temperature of CPU cores in Celsius.
 func CPUTemperature() ([]float32, error) {
 	// Look in all these folders for core temp
 	corePaths := []string{
@@ -74,6 +78,7 @@ func CPUTemperature() ([]float32, error) {
 	return temps, nil
 }
 
+// CPUCurrentFrequency returns the current CPU frequency in MHz.
 func CPUCurrentFrequency() (int, error) {
 	frequency, cpuFrequencyError := readCPUFreqFile("/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq")
 

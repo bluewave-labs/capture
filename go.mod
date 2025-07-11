@@ -7,6 +7,7 @@ require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/mstrYoda/go-arctest v0.0.0-20250422073853-ff9fe79f31d7
 	github.com/shirou/gopsutil/v4 v4.24.9
+	github.com/yusufpapurcu/wmi v1.2.4
 	golang.org/x/sys v0.33.0
 )
 
@@ -52,7 +53,6 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
-	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
 	go.opentelemetry.io/otel v1.36.0 // indirect
