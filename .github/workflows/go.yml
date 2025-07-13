@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-         os: [ubuntu-latest, ubuntu-24.04-arm, macos-15, macos-15-large, windows-2025]
+         os: [ubuntu-latest, ubuntu-24.04-arm, macos-15, windows-2025]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-         os: [ubuntu-latest, ubuntu-24.04-arm, macos-15, macos-15-large, windows-2025]
+         os: [ubuntu-latest, ubuntu-24.04-arm, macos-15, windows-2025]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
