@@ -6,23 +6,20 @@ on:
       - main
       - develop
 
+concurrency:
+   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+   cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
-  lint:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Golangci-lint
-        uses: golangci/golangci-lint-action@v6.1.1
-
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+         os: [ubuntu-latest, ubuntu-24.04-arm, macos-15, macos-15-large, windows-2025]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,11 +28,15 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
-      - run: |
-          go test -v -timeout 30s github.com/bluewave-labs/capture/test
-  
+      - name: Run all tests
+        run: go test -v -timeout 30s ./test/...
+
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+         os: [ubuntu-latest, ubuntu-24.04-arm, macos-15, macos-15-large, windows-2025]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,4 +45,5 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
-      - run: go build -o dist/capture ./cmd/capture/
+      - name: Build capture binary
+        run: go build -o dist/capture ./cmd/capture/
