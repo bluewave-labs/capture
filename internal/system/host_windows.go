@@ -1,7 +1,7 @@
 //go:build windows
 // +build windows
 
-package metric
+package system
 
 import (
 	"golang.org/x/sys/windows/registry"

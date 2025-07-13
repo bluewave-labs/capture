@@ -1,6 +1,7 @@
 package metric
 
 import (
+	"github.com/bluewave-labs/capture/internal/system"
 	"github.com/shirou/gopsutil/v4/host"
 )
 
@@ -22,7 +23,7 @@ func GetHostInformation() (*HostData, []CustomErr) {
 		return &defaultHostData, hostErrors
 	}
 
-	prettyName, prettyErr := GetPrettyName()
+	prettyName, prettyErr := system.GetPrettyName()
 	if prettyErr != nil {
 		hostErrors = append(hostErrors, CustomErr{
 			Metric: []string{"host.pretty_name"},

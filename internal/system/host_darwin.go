@@ -1,7 +1,7 @@
 //go:build darwin
 // +build darwin
 
-package metric
+package system
 
 import (
 	"bytes"
