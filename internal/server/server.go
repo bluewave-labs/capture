@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/bluewave-labs/capture/internal/config"
+	"github.com/bluewave-labs/capture/internal/metric"
 	"github.com/bluewave-labs/capture/internal/server/handler"
 	"github.com/bluewave-labs/capture/internal/server/middleware"
 	"github.com/gin-gonic/gin"
@@ -50,7 +51,7 @@ func (s *Server) GracefulShutdown(timeout time.Duration) {
 	}
 }
 
-func InitializeHandler(config *config.Config, metadata *handler.CaptureMeta) http.Handler {
+func InitializeHandler(config *config.Config, metadata *handler.CaptureMeta, influxStorage *metric.InfluxDBStorage) http.Handler {
 	// Initialize the Gin with default middlewares
 	r := gin.Default()
 	metadata.Mode = gin.Mode()
@@ -66,7 +67,7 @@ func InitializeHandler(config *config.Config, metadata *handler.CaptureMeta) htt
 	apiV1.Use(middleware.AuthRequired(config.APISecret))
 
 	// Create metrics handler
-	metricsHandler := handler.NewMetricsHandler(metadata)
+	metricsHandler := handler.NewMetricsHandler(metadata, influxStorage)
 
 	// Metrics
 	apiV1.GET("/metrics", metricsHandler.Metrics)
@@ -77,13 +78,14 @@ func InitializeHandler(config *config.Config, metadata *handler.CaptureMeta) htt
 	apiV1.GET("/metrics/smart", metricsHandler.SmartMetrics)
 	apiV1.GET("/metrics/net", metricsHandler.MetricsNet)
 	apiV1.GET("/metrics/docker", metricsHandler.MetricsDocker)
+	apiV1.GET("/history/disk", metricsHandler.DiskHistory)
 
 	return r.Handler()
 }
 
-func NewServer(config *config.Config, handler http.Handler, metadata *handler.CaptureMeta) *Server {
+func NewServer(config *config.Config, handler http.Handler, metadata *handler.CaptureMeta, influxStorage *metric.InfluxDBStorage) *Server {
 	if handler == nil {
-		handler = InitializeHandler(config, metadata)
+		handler = InitializeHandler(config, metadata, influxStorage)
 	}
 	return &Server{
 		Server: &http.Server{

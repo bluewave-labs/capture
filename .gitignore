@@ -30,3 +30,6 @@ go.work.sum
 
 # air-verse/air tmp directory
 tmp
+
+# influxdb data
+influxdb-data/
