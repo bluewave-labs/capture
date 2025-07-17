@@ -260,6 +260,7 @@ components:
           example: 2500
         temperature:
           type: array
+          nullable: true
           items:
             type: number
             example: [50]
