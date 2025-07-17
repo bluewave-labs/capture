@@ -4,9 +4,14 @@
 package system
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/yusufpapurcu/wmi"
+)
+
+var (
+	ErrCPUDetailsNotImplemented = errors.New("CPU details not implemented on windows")
 )
 
 // CPUTemperature returns CPU temperatures in Celsius for all thermal zones.

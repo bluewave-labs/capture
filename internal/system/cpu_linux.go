@@ -11,6 +11,10 @@ import (
 	"strings"
 )
 
+var (
+	ErrCPUDetailsNotImplemented = errors.New("CPU details not implemented on linux")
+)
+
 func readTempFile(path string) (float32, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {

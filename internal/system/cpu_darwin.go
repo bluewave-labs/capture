@@ -8,12 +8,12 @@ import (
 )
 
 var (
-	ErrNotImplemented = errors.New("not implemented on this platform")
+	ErrCPUDetailsNotImplemented = errors.New("CPU details not implemented on darwin")
 )
 
 func CPUTemperature() ([]float32, error) {
-	return nil, ErrNotImplemented
+	return nil, ErrCPUDetailsNotImplemented
 }
 func CPUCurrentFrequency() (int, error) {
-	return 0, ErrNotImplemented
+	return 0, ErrCPUDetailsNotImplemented
 }

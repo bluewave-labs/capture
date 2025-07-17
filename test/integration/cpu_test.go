@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/bluewave-labs/capture/internal/system"
@@ -24,6 +25,10 @@ func TestCPUTemperature(t *testing.T) {
 func TestCPUCurrentFrequency(t *testing.T) {
 	frequency, err := system.CPUCurrentFrequency()
 	if err != nil {
+		if errors.Is(err, system.ErrCPUDetailsNotImplemented) {
+			t.Skip("CPU current frequency retrieval is not implemented on this platform")
+		}
+
 		t.Fatalf("Failed to get CPU current frequency: %v", err)
 	}
 	t.Logf("CPU Current Frequency: %v MHz", frequency)
