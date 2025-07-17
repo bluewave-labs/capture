@@ -6,11 +6,23 @@ format:
 format-check:
     @gofmt -l ./
 
+unit-test:
+	@go test \
+		-v \
+		-timeout 30s \
+		./test/
+
+integration-test:
+	@go test \
+		-v \
+		-timeout 30s \
+		./test/integration/...
+
 test:
 	@go test \
 		-v \
 		-timeout 30s \
-		github.com/bluewave-labs/capture/test
+		./test/...
 
 lint:
 	@golangci-lint run
