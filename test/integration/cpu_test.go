@@ -17,6 +17,10 @@ func TestCPUTemperature(t *testing.T) {
 
 	temperature, err := system.CPUTemperature()
 	if err != nil {
+		if errors.Is(err, system.ErrCPUDetailsNotImplemented) {
+			t.Skip("CPU temperature retrieval is not implemented on this platform")
+		}
+
 		t.Fatalf("Failed to get CPU temperature: %v", err)
 	}
 	t.Logf("CPU Temperature: %v", temperature)
