@@ -12,7 +12,7 @@ import (
 // TestCPUTemperature tests the functionality of retrieving the CPU temperature.
 // It checks if the temperature can be fetched without errors and logs the result.
 func TestCPUTemperature(t *testing.T) {
-	platformToSkipOnCI := runtime.GOOS == "linux" // GitHub ubuntu runners may not have permission to access CPU frequency
+	platformToSkipOnCI := runtime.GOOS == "linux" || runtime.GOOS == "windows" // GitHub ubuntu and windows runners may not have permission to access CPU frequency
 	test.SkipIfCI(t, &platformToSkipOnCI, "Skipping CPU temperature test in CI environment due to potential permission and virtualization issues")
 
 	temperature, err := system.CPUTemperature()
