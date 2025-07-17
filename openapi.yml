@@ -44,7 +44,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/AllMetricResponse'
       security:
-        - bearerAuth: []
+        - type: http
+          scheme: bearer
+          bearerFormat: JWT
   /api/v1/metrics/cpu:
     get:
       summary: Read CPU data
@@ -62,7 +64,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/CPUMetricResponse'
       security:
-        - bearerAuth: []
+        - type: http
+          scheme: bearer
+          bearerFormat: JWT
   /api/v1/metrics/memory:
     get:
       summary: Read Memory data
@@ -80,7 +84,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/MemoryMetricResponse'
       security:
-        - bearerAuth: []
+        - type: http
+          scheme: bearer
+          bearerFormat: JWT
   /api/v1/metrics/disk:
     get:
       summary: Read Disk data
@@ -98,7 +104,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/DiskMetricResponse'
       security:
-        - bearerAuth: []
+        - type: http
+          scheme: bearer
+          bearerFormat: JWT
   /api/v1/metrics/host:
     get:
       summary: Read Host data
@@ -116,7 +124,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/HostMetricResponse'
       security:
-        - bearerAuth: []
+        - type: http
+          scheme: bearer
+          bearerFormat: JWT
   /api/v1/metrics/smart:
     get:
       summary: Read S.M.A.R.T. data
@@ -134,7 +144,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/SmartMetricResponse'
       security:
-        - bearerAuth: []
+        - type: http
+          scheme: bearer
+          bearerFormat: JWT
   /api/v1/metrics/net:
     get:
       summary: Read Network data
@@ -152,13 +164,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/NetworkMetricResponse'
       security:
-        - bearerAuth: []
+        - type: http
+          scheme: bearer
+          bearerFormat: JWT
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
   schemas:
     AllMetricResponse:
       type: object
@@ -250,8 +259,11 @@ components:
           type: number
           example: 2500
         temperature:
-          type: number
-          example: 50
+          type: array
+          nullable: true
+          items:
+            type: number
+            example: [50]
         free_percent:
           type: number
           example: 0.5
@@ -353,7 +365,10 @@ components:
       type: object
       properties:
         metric:
-          type: string
+          type: array
+          items:
+            type: string
+            example: "cpu.temperature"
         error:
           type: string
     NetworkMetricResponse:
@@ -374,9 +389,7 @@ components:
       type: object
       properties:
         data:
-          type: array
-          items:
-            $ref: '#/components/schemas/SmartData'
+          $ref: '#/components/schemas/SmartData'
         capture:
           $ref: '#/components/schemas/CaptureMetadata'
         errors:
