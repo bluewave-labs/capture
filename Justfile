@@ -43,3 +43,11 @@ build-macos:
 build-windows:
 	@GOOS=windows GOARCH=amd64 go build -o dist/windows/{{APP_NAME}}-windows-amd64.exe ./cmd/capture
 	@GOOS=windows GOARCH=arm64 go build -o dist/windows/{{APP_NAME}}-windows-arm64.exe ./cmd/capture
+
+openapi-contract-test:
+	@uvx schemathesis \
+		--config-file ./schemathesis.toml \
+		run ./openapi.yml \
+		--url http://127.0.0.1:59232 \
+		--report har \
+		--report-dir .schemathesis-report

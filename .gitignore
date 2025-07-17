@@ -30,3 +30,8 @@ go.work.sum
 
 # air-verse/air tmp directory
 tmp
+
+# schemathesis directories, used for API Contract testing
+.hypothesis/
+schemathesis-report/
+.schemathesis-report/

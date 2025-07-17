@@ -1,0 +1,5 @@
+continue-on-failure = true
+checks.unsupported_method.enabled = false
+
+[headers]
+Authorization = "Bearer ${API_SECRET}"
