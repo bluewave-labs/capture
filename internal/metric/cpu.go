@@ -3,7 +3,7 @@ package metric
 import (
 	"time"
 
-	"github.com/bluewave-labs/capture/internal/sysfs"
+	"github.com/bluewave-labs/capture/internal/system"
 	"github.com/shirou/gopsutil/v4/cpu"
 )
 
@@ -59,8 +59,8 @@ func CollectCPUMetrics() (*CPUData, []CustomErr) {
 		cpuUsagePercent = cpuPercents[0] / 100.0
 	}
 
-	// Collect CPU Temperature from sysfs
-	cpuTemp, cpuTempErr := sysfs.CPUTemperature()
+	// Collect CPU Temperature from system-specific implementation
+	cpuTemp, cpuTempErr := system.CPUTemperature()
 
 	if cpuTempErr != nil {
 		cpuErrors = append(cpuErrors, CustomErr{
@@ -70,7 +70,8 @@ func CollectCPUMetrics() (*CPUData, []CustomErr) {
 		cpuTemp = nil
 	}
 
-	cpuCurrentFrequency, cpuCurFreqErr := sysfs.CPUCurrentFrequency()
+	// Collect Current CPU Frequency from system-specific implementation
+	cpuCurrentFrequency, cpuCurFreqErr := system.CPUCurrentFrequency()
 	if cpuCurFreqErr != nil {
 		cpuErrors = append(cpuErrors, CustomErr{
 			Metric: []string{"cpu.current_frequency"},
