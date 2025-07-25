@@ -24,6 +24,23 @@ docker run -d \
     ghcr.io/bluewave-labs/capture:latest
 ```
 
+## Quick Start (Docker Compose)
+
+```yaml
+services:
+  # Capture service
+  capture:
+    image: ghcr.io/bluewave-labs/capture:latest
+    container_name: capture
+    ports:
+      - "59232:59232"
+    environment:
+      - API_SECRET=REPLACE_WITH_YOUR_SECRET # Required authentication key. Do not forget to replace this with your actual secret key.
+      - GIN_MODE=release
+    volumes:
+      - /etc/os-release:/etc/os-release:ro
+```
+
 ## Configuration
 
 | Variable     | Description                                                                                                                                                         | Default | Required |
