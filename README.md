@@ -32,6 +32,7 @@ services:
   capture:
     image: ghcr.io/bluewave-labs/capture:latest
     container_name: capture
+    restart: unless-stopped
     ports:
       - "59232:59232"
     environment:
