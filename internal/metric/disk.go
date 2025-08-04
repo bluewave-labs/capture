@@ -55,6 +55,11 @@ func isSpecialPartition(p disk.PartitionStat) bool {
 // shouldIncludePartition determines if a partition should be included in metrics
 // collection based on the disk metric flow rules.
 func shouldIncludePartition(partition disk.PartitionStat) bool {
+	// Always include ZFS filesystems
+	if isZFSFilesystem(partition) {
+		return true
+	}
+
 	// Skip loopback devices
 	if isLoopbackDevice(partition) {
 		return false
@@ -63,11 +68,6 @@ func shouldIncludePartition(partition disk.PartitionStat) bool {
 	// Skip special system partitions
 	if isSpecialPartition(partition) {
 		return false
-	}
-
-	// Always include ZFS filesystems
-	if isZFSFilesystem(partition) {
-		return true
 	}
 
 	// For Unix systems, require /dev prefix
