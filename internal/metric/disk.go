@@ -23,6 +23,19 @@ func isDevPrefixed(p disk.PartitionStat) bool {
 	return strings.HasPrefix(p.Device, "/dev")
 }
 
+<<<<<<< HEAD
+=======
+// isWindowsDrive checks if the device is a Windows drive (C:, D:, etc.).
+func isWindowsDrive(p disk.PartitionStat) bool {
+	// Windows drives typically look like "C:", "D:", etc.
+	device := strings.TrimSpace(p.Device)
+	if len(device) >= 2 {
+		return device[1] == ':' && ((device[0] >= 'A' && device[0] <= 'Z') || (device[0] >= 'a' && device[0] <= 'z'))
+	}
+	return false
+}
+
+>>>>>>> 1972df29a188c8ec9590cc067def1ec21ce4dace
 // isSpecialPartition checks if the partition is a special system partition
 // (Recovery, EFI, System Reserved, etc.).
 func isSpecialPartition(p disk.PartitionStat) bool {
@@ -46,20 +59,45 @@ func isSpecialPartition(p disk.PartitionStat) bool {
 // shouldIncludePartition determines if a partition should be included in metrics
 // collection based on the disk metric flow rules.
 func shouldIncludePartition(partition disk.PartitionStat) bool {
+<<<<<<< HEAD
+=======
+	// Skip loopback devices
+>>>>>>> 1972df29a188c8ec9590cc067def1ec21ce4dace
 	if isLoopbackDevice(partition) {
 		return false
 	}
 
+<<<<<<< HEAD
+=======
+	// Skip special system partitions
+>>>>>>> 1972df29a188c8ec9590cc067def1ec21ce4dace
 	if isSpecialPartition(partition) {
 		return false
 	}
 
+<<<<<<< HEAD
+=======
+	// Always include ZFS filesystems
+>>>>>>> 1972df29a188c8ec9590cc067def1ec21ce4dace
 	if isZFSFilesystem(partition) {
 		return true
 	}
 
+<<<<<<< HEAD
 	if !isDevPrefixed(partition) {
 		return false
+=======
+	// For Unix systems, require /dev prefix
+	if runtime.GOOS != "windows" {
+		if !isDevPrefixed(partition) {
+			return false
+		}
+	} else {
+		// For Windows, include drives that look like C:, D:, etc.
+		if !isWindowsDrive(partition) {
+			return false
+		}
+>>>>>>> 1972df29a188c8ec9590cc067def1ec21ce4dace
 	}
 
 	return true
