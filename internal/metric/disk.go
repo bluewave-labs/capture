@@ -2,7 +2,6 @@ package metric
 
 import (
 	"runtime"
-	"slices"
 	"strings"
 
 	"github.com/shirou/gopsutil/v4/disk"
@@ -186,7 +185,7 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 
 	var diskErrors []CustomErr
 	var metricsSlice MetricsSlice
-	var checkedDevices = make([]string, 0, 10) // To keep track of checked partitions
+	var checkedDevices = make(map[string]struct{}) // To keep track of checked partitions
 
 	// List all partitions on the system. Using disk.Partitions(all=true)
 	partitions, partErr := disk.Partitions(true)
@@ -201,7 +200,7 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 	// Check each partition for the filtering
 	for _, partition := range partitions {
 		// Check if the partition is already checked to avoid duplicates
-		if slices.Contains(checkedDevices, partition.Device) {
+		if _, ok := checkedDevices[partition.Device]; ok {
 			continue
 		}
 
@@ -217,7 +216,7 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 			continue
 		}
 
-		checkedDevices = append(checkedDevices, partition.Device)
+		checkedDevices[partition.Device] = struct{}{} // Mark this partition as checked
 		metricsSlice = append(metricsSlice, diskMetrics)
 	}
 
