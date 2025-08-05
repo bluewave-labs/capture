@@ -13,8 +13,7 @@ builds:
     goos:
       - linux
       - darwin
-      # Disable Windows builds for now, because Capture is not working on windows properly
-      # - windows
+      - windows
     goarch:
       # Support multiple cpu architectures
       - amd64
@@ -23,10 +22,6 @@ builds:
     goarm:
       - 6
       - 7
-    ignore:
-      # Ignore the arm64 build on windows
-      - goos: windows
-        goarch: arm64
 
 kos:
   - id: capture
