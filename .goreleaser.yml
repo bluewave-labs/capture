@@ -19,6 +19,10 @@ builds:
       # Support multiple cpu architectures
       - amd64
       - arm64
+      - arm
+    goarm:
+      - 6
+      - 7
     ignore:
       # Ignore the arm64 build on windows
       - goos: windows
@@ -64,3 +68,6 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+
+release:
+  draft: true
