@@ -51,6 +51,14 @@ archives:
       - goos: windows
         formats: zip
 
+sboms:
+  - id: capture
+    cmd: syft
+    args: ["scan", "$artifact", "--output", "spdx-json=$document"]
+    artifacts: archive
+    documents:
+      - "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}.sbom.json"
+
 checksum:
   # Generate checksum files to confirm the integrity of the files.
   # `sha256sum <file>`
