@@ -4,6 +4,32 @@
 
 Date-Format: YYYY-MM-DD
 
+## 1.3.0 (2025-08-06)
+
+The most wanted Capture release is here.
+Capture supports **🔥 Windows (amd64 & arm64)**, **macOS**, **Linux**, and even **ARMv6/v7** devices like Raspberry Pi.
+
+You can access new pre-built binaries from the [release page](https://github.com/bluewave-labs/capture/releases/tag/v1.3.0).
+
+**Improved Clarity & Security**  
+Curious about what's inside Capture? Each platform build now includes a **Software Bill of Materials (SBOM)**, giving you full transparency into dependencies and components.
+
+- [af2e7a3](https://github.com/bluewave-labs/capture/commit/af2e7a329e6cf74d700a8d10c70cdc5189598ebf) CI Improvements for Check/Test/Build in each platform (#98)
+- [9f3dd0d](https://github.com/bluewave-labs/capture/commit/9f3dd0d6b9793d26a1200e4dff43e08873b97bfd) build: Add support for SBOM generation (#110)
+- [f658dbb](https://github.com/bluewave-labs/capture/commit/f658dbb945fbef0e59a9fa03689bc35046f5771f) build: Enable Windows amd64 and arm64 builds (#109)
+- [e33faa9](https://github.com/bluewave-labs/capture/commit/e33faa9e6f7cb167db38a30637b25f423a5021bd) build: Ignore arm(arm32) architecture on Windows (#111)
+- [961b984](https://github.com/bluewave-labs/capture/commit/961b9848e2cb35c99c8202ac5ffaf69e19cf6ce1) cd(release): Install Syft for enhanced dependency scanning (#113)
+- [013b3aa](https://github.com/bluewave-labs/capture/commit/013b3aa3abe8e6f096d79ffc322d531fd32127d2) chore: Add support for armv6 and armv7 architecture in GoReleaser (#76)
+- [a84f6ed](https://github.com/bluewave-labs/capture/commit/a84f6edaef782743c6a866b8ca3e763c697e58d1) feat(ci): Add OpenAPI contract testing workflow (#102)
+- [6b9ac0d](https://github.com/bluewave-labs/capture/commit/6b9ac0dfb5a3820534dd096bf4db2ea2b0ce7215) feat(system): Migrate sysfs module to system for Multi Platform Support (#97)
+- [0110495](https://github.com/bluewave-labs/capture/commit/01104959f648453be1affadf0cd684c468e2fcb1) feat: Add unit and integration test commands to Justfile (#101)
+- [a95f94c](https://github.com/bluewave-labs/capture/commit/a95f94c61072659f0784017cad434cac3622a9bc) feat: Implement GetPrettyName for macOS, Linux, and Windows (#96)
+- [88fad86](https://github.com/bluewave-labs/capture/commit/88fad86171529d615864aeb29833e0f2f582c177) refactor(disk): Improve device filtering compatibility on Windows (#108)
+
+[Full Changelog](https://github.com/bluewave-labs/capture/compare/v1.2.0...v1.3.0)
+
+Contributors: @mertssmnoglu
+
 ## 1.2.0 (2025-06-24)
 
 This release adds support for monitoring network activity and Docker containers. It also includes enhanced API responses with metadata and introduces user-friendly host names (e.g., "Ubuntu 24.04.2 LTS") for improved readability.
