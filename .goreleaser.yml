@@ -22,6 +22,11 @@ builds:
     goarm:
       - 6
       - 7
+    ignore:
+      # Ignore the arm(arm32) architecture Windows
+      # Still supporting the arm64 architecture for Windows + Raspberry Pi combo and other development environments like arm64 laptops.
+      - goos: windows
+        goarch: arm
 
 kos:
   - id: capture
