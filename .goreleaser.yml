@@ -1,0 +1,81 @@
+version: 2
+project_name: capture
+
+builds:
+  - id: capture
+    main: ./cmd/capture
+    ldflags:
+      - -s -w
+      - -extldflags "-static"
+      - -X "main.Version={{.Version}}"
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      # Support multiple cpu architectures
+      - amd64
+      - arm64
+      - arm
+    goarm:
+      - 6
+      - 7
+    ignore:
+      # Ignore the arm(arm32) architecture Windows
+      # Still supporting the arm64 architecture for Windows + Raspberry Pi combo and other development environments like arm64 laptops.
+      - goos: windows
+        goarch: arm
+
+kos:
+  - id: capture
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    tags:
+      - latest
+      - '{{.Tag}}'
+    main: ./cmd/capture
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -extldflags "-static"
+      - -X "main.Version={{.Version}}"
+    creation_time: "{{.CommitTimestamp}}"
+    sbom: spdx
+    env:
+      - CGO_ENABLED=0
+    bare: true
+
+archives:
+  - formats: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    format_overrides:
+      - goos: windows
+        formats: zip
+
+sboms:
+  - id: capture
+    cmd: syft
+    args: ["scan", "$artifact", "--output", "spdx-json=$document"]
+    artifacts: archive
+    documents:
+      - "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}.sbom.json"
+
+checksum:
+  # Generate checksum files to confirm the integrity of the files.
+  # `sha256sum <file>`
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+release:
+  draft: true

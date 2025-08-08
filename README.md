@@ -1,159 +1,131 @@
-# BlueWave Uptime Agent
+![github-license](https://img.shields.io/github/license/bluewave-labs/capture)
+![github-repo-size](https://img.shields.io/github/repo-size/bluewave-labs/capture)
+![github-commit-activity](https://img.shields.io/github/commit-activity/w/bluewave-labs/capture)
+![github-last-commit-data](https://img.shields.io/github/last-commit/bluewave-labs/capture)
+![github-languages](https://img.shields.io/github/languages/top/bluewave-labs/capture)
+![github-issues-and-prs](https://img.shields.io/github/issues-pr/bluewave-labs/capture)
+![github-issues](https://img.shields.io/github/issues/bluewave-labs/capture)
+[![go-reference](https://pkg.go.dev/badge/github.com/bluewave-labs/capture.svg)](https://pkg.go.dev/github.com/bluewave-labs/capture)
+[![github-actions-lint](https://github.com/bluewave-labs/capture/actions/workflows/lint.yml/badge.svg)](https://github.com/bluewave-labs/capture/actions/workflows/lint.yml)
 
-## API Responses
+<h1 align="center"><a href="https://bluewavelabs.ca" target="_blank">Capture</a></h1>
 
-| Endpoint          | Method | Description                                                                   |
-|-------------------|--------|-------------------------------------------------------------------------------|
-| `/health`         | GET    | Returns 200 OK                                                                |
-| `/metrics`        | GET    | Returns the all system metrics(cpu,memory,disk,host)                          |
-| `/metrics/cpu`    | GET    | Returns the system cpu metrics                                                |
-| `/metrics/memory` | GET    | Returns the system memory metrics                                             |
-| `/metrics/disk`   | GET    | Returns the system disk metrics                                               |
-| `/metrics/host`   | GET    | Returns the system host informations                                          |
-| `/ws/metrics`     | GET    | Returns the all system metrics(cpu,memory,disk,host) in every n seconds (n=2) |
+<p align="center"><strong>An open source hardware monitoring agent</strong></p>
 
-### CPU Response
+Capture is a hardware monitoring agent that collects hardware information from the host machine and exposes it through a RESTful API. The agent is designed to be lightweight and easy to use.
 
-```jsonc
-{
-    "physical_core": integer, // Physical cores
-    "logical_core":  integer, // Logical cores aka Threads
-    "frequency":     integer, // Frequency in mHz
-    "temperature":   float,   // Temperature in Celsius     
-    "free_percent":  float,   // Free percentage           //* 1- Usage
-    "usage_percent": float    // Usage percentage          //* Total - Idle / Total
-}
+## Quick Start (Docker)
+
+```shell
+docker run -d \
+    -v /etc/os-release:/etc/os-release:ro \
+    -p 59232:59232 \
+    -e API_SECRET=your-secret-key \
+    ghcr.io/bluewave-labs/capture:latest
 ```
 
-### Memory Response
+## Quick Start (Docker Compose)
 
-```jsonc
-{
-    "total_bytes":     integer, // Total space in bytes
-    "available_bytes": integer, // Available space in bytes
-    "used_bytes":      integer, // Used space in bytes      //* Total - Free - Buffers - Cached
-    "usage_percent":   float    // Usage Percent            //* (Used / Total) * 100.0
-}
+```yaml
+services:
+  # Capture service
+  capture:
+    image: ghcr.io/bluewave-labs/capture:latest
+    container_name: capture
+    restart: unless-stopped
+    ports:
+      - "59232:59232"
+    environment:
+      - API_SECRET=REPLACE_WITH_YOUR_SECRET # Required authentication key. Do not forget to replace this with your actual secret key.
+      - GIN_MODE=release
+    volumes:
+      - /etc/os-release:/etc/os-release:ro
 ```
 
-### Disk Response
+## Configuration
 
-```jsonc
-[
-    {
-        "read_speed_bytes":  integer, // WIP
-        "write_speed_bytes": integer, // WIP
-        "total_bytes":       integer, // Total space of "/" in bytes
-        "free_bytes":        integer, // Free space of "/" in bytes
-        "usage_percent":     float    // Usage Percent of "/"
-    }
-]
+| Variable     | Description                                                                                                                                                         | Default | Required |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------- |
+| `API_SECRET` | Authentication key ([Must match the secret you enter on Checkmate](https://docs.checkmate.so/users-guide/infrastructure-monitor#step-2-configure-general-settings)) | -       | Yes      |
+| `PORT`       | Server port number                                                                                                                                                  | 59232   | No       |
+| `GIN_MODE`   | Gin(web framework) mode. Debug is for development                                                                                                                                  | release | No       |
+
+Example configurations:
+
+```shell
+# Minimal
+API_SECRET=your-secret-key ./capture
+
+# Complete
+API_SECRET=your-secret-key PORT=59232 GIN_MODE=release ./capture
 ```
 
-### Host Response
+## Installation Options
 
-```jsonc
-{
-    "os":             string, // linux, darwin, windows
-    "platform":       string, // arch, debian, suse...
-    "kernel_version": string, // 6.10.10, 6.0.0, 6.10.0-zen...
-}
+### Docker (Recommended)
+
+Pull and run the official image:
+
+```shell
+docker run -d \
+    -v /etc/os-release:/etc/os-release:ro \
+    -p 59232:59232 \
+    -e API_SECRET=your-secret-key \
+    ghcr.io/bluewave-labs/capture:latest
 ```
 
-## Availability
+Or build locally:
 
-| CPU                 | GNU/Linux | Windows | MacOS     |
-| --------------------|-----------|---------|-----------|
-| Physical Core Count | ✅        | -       | -         |
-| Logical Core Count  | ✅        | -       | -         |
-| Frequency           | ✅        | -       | -         |
-| Temperature         | ✅        | -       | -         |
-| Free Percent        | ✅        | -       | -         |
-| Usage Percent       | ✅        | -       | -         |
+```shell
+docker buildx build -t capture .
+docker run -d -v /etc/os-release:/etc/os-release:ro -p 59232:59232 -e API_SECRET=your-secret-key capture
+```
 
-| Memory          | GNU/Linux | Windows | MacOS     |
-| ----------------|-----------|---------|-----------|
-| Total Bytes     | ✅        | -       | -         |
-| Available Bytes | ✅        | -       | -         |
-| Used Bytes      | ✅        | -       | -         |
-| Usage Percent   | ✅        | -       | -         |
+Docker options explained:
 
-| Disk               | GNU/Linux | Windows | MacOS     |
-| -------------------|-----------|---------|-----------|
-| Read Speed  Bytes  | -         | -       | -         |
-| Write Speed Byres  | -         | -       | -         |
-| Total Bytes        | ✅        | -       | -         |
-| Free Bytes         | ✅        | -       | -         |
-| Usage Percent      | ✅        | -       | -         |
+- `-v /etc/os-release:/etc/os-release:ro`: Platform detection
+- `-p 59232:59232`: Port mapping
+- `-e API_SECRET`: Required authentication key
+- `-d`: Detached mode
 
-| Host           | GNU/Linux | Windows | MacOS     |
-| ---------------|-----------|---------|-----------|
-| OS             | ✅        | -       | -         |
-| Platform       | ✅        | -       | -         |
-| Kernel Version | ✅        | -       | -         |
+## System Installation
 
-## Requirements
+Choose one of these methods:
 
-- [Go](https://go.dev/dl/)
-- [Just](https://github.com/casey/just)
+1. **Pre-built Binaries**: Download from [GitHub Releases](https://github.com/bluewave-labs/capture/releases)
 
-## Set Up Guide
+2. **Go Package**:
 
-1. Git Clone
+   ```shell
+   go install github.com/bluewave-labs/capture/cmd/capture@latest
+   ```
 
-    ```shell
-    git clone REPO_LINK
-    ```
+3. **Build from Source**:
 
-2. Change your directory
+   ```shell
+   git clone git@github.com:bluewave-labs/capture
+   cd capture
+   just build   # or: go build -o dist/capture ./cmd/capture/
+   ```
 
-    ```shell
-    cd bluewave-uptime-agent
-    ```
+## API Documentation
 
-3. Install dependencies
+Our API is documented in accordance with the OpenAPI spec.
 
-    ```shell
-    go mod download
-    ```
+You can find the OpenAPI specifications [here](https://github.com/bluewave-labs/capture/blob/develop/openapi.yml)
 
-4. Build the project
+## Contributing
 
-    ```shell
-    just build
-    ```
+We welcome contributions! If you would like to contribute, please read the [CONTRIBUTING.md](./CONTRIBUTING.md) file for more information.
 
-    or
+<a href="https://github.com/bluewave-labs/capture/graphs/contributors">
+  <img alt="Contributors Graph" src="https://contrib.rocks/image?repo=bluewave-labs/capture" />
+</a>
 
-    ```shell
-    go build -o bwuagent ./cmd/api/
-    ```
+## Star History
 
-5. Run the project
+[![Star History Chart](https://api.star-history.com/svg?repos=bluewave-labs/capture&type=Date)](https://www.star-history.com/#bluewave-labs/capture&Date)
 
-    ```shell
-    ./bwuagent
-    ```
+## License
 
-    or
-
-    ```shell
-    go run ./cmd/api/
-    ```
-
-6. Environment Variables
-
-    If you want to change the port, api secret or allow public api, you can use this environment variables.
-
-    ```shell
-    PORT = your_port
-    API_SECRET = your_secret
-    ALLOW_PUBLIC_API = true/false
-    GIN_MODE = release/debug
-    ```
-
-    Usage:
-
-    ```shell
-    PORT=8080 API_SECRET=your_secret ALLOW_PUBLIC_API=true GIN_MODE=release ./bwuagent
-    ```
+Capture is licensed under AGPLv3. You can find the license [here](./LICENSE)

@@ -1,0 +1,497 @@
+openapi: 3.0.0
+info:
+  title: Capture
+  description: OpenAPI Specifications for the Capture's API
+  version: 1.1.0
+  license:
+    name: AGPL-3.0
+    url: https://github.com/bluewave-labs/capture/blob/develop/LICENSE
+servers:
+  - url: http://localhost:{PORT}
+    description: Local development server
+    variables:
+      PORT:
+        default: '59232'
+        description: Port number
+        enum:
+          - '59232'
+paths:
+  /health:
+    get:
+      summary: Check if the server is healthy or not
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "OK"
+  /api/v1/metrics:
+    get:
+      summary: Read server data
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllMetricResponse'
+        '207':
+          description: Multi-Status | Some of the data is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllMetricResponse'
+      security:
+        - type: http
+          scheme: bearer
+          bearerFormat: JWT
+  /api/v1/metrics/cpu:
+    get:
+      summary: Read CPU data
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CPUMetricResponse'
+        '207':
+          description: Multi-Status | Some of the data is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CPUMetricResponse'
+      security:
+        - type: http
+          scheme: bearer
+          bearerFormat: JWT
+  /api/v1/metrics/memory:
+    get:
+      summary: Read Memory data
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryMetricResponse'
+        '207':
+          description: Multi-Status | Some of the data is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryMetricResponse'
+      security:
+        - type: http
+          scheme: bearer
+          bearerFormat: JWT
+  /api/v1/metrics/disk:
+    get:
+      summary: Read Disk data
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiskMetricResponse'
+        '207':
+          description: Multi-Status | Some of the data is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiskMetricResponse'
+      security:
+        - type: http
+          scheme: bearer
+          bearerFormat: JWT
+  /api/v1/metrics/host:
+    get:
+      summary: Read Host data
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HostMetricResponse'
+        '207':
+          description: Multi-Status | Some of the data is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HostMetricResponse'
+      security:
+        - type: http
+          scheme: bearer
+          bearerFormat: JWT
+  /api/v1/metrics/smart:
+    get:
+      summary: Read S.M.A.R.T. data
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmartMetricResponse'
+        '207':
+          description: Multi-Status | Some of the data is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmartMetricResponse'
+      security:
+        - type: http
+          scheme: bearer
+          bearerFormat: JWT
+  /api/v1/metrics/net:
+    get:
+      summary: Read Network data
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkMetricResponse'
+        '207':
+          description: Multi-Status | Some of the data is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkMetricResponse'
+      security:
+        - type: http
+          scheme: bearer
+          bearerFormat: JWT
+components:
+  schemas:
+    AllMetricResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            cpu:
+              $ref: '#/components/schemas/CPUData'
+            memory:
+              $ref: '#/components/schemas/MemoryData'
+            disk:
+              type: array
+              items:
+                $ref: '#/components/schemas/DiskData'
+            host:
+              $ref: '#/components/schemas/HostData'
+            net:
+              type: array
+              items:
+                $ref: '#/components/schemas/NetData'
+        capture:
+          $ref: '#/components/schemas/CaptureMetadata'
+        errors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MetricErrorObject'
+    CPUMetricResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/CPUData'
+        capture:
+          $ref: '#/components/schemas/CaptureMetadata'
+        errors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MetricErrorObject'
+    MemoryMetricResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/MemoryData'
+        capture:
+          $ref: '#/components/schemas/CaptureMetadata'
+        errors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MetricErrorObject'
+    DiskMetricResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiskData'
+        capture:
+          $ref: '#/components/schemas/CaptureMetadata'
+        errors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MetricErrorObject'
+    HostMetricResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/HostData'
+        capture:
+          $ref: '#/components/schemas/CaptureMetadata'
+        errors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MetricErrorObject'
+    CPUData:
+      type: object
+      properties:
+        physical_core:
+          type: integer
+          example: 4
+        logical_core:
+          type: integer
+          example: 8
+        frequency:
+          type: number
+          example: 2500
+        temperature:
+          type: array
+          nullable: true
+          items:
+            type: number
+            example: [50]
+        free_percent:
+          type: number
+          example: 0.5
+        usage_percent:
+          type: number
+          example: 0.5
+    MemoryData:
+      type: object
+      properties:
+        total_bytes:
+          type: integer
+          example: 1351533568
+        available_bytes:
+          type: integer
+          example: 351533568
+        used_bytes:
+          type: integer
+          example: 1000000000
+        usage_percent:
+          type: number
+          example: 0.2601
+    DiskData: 
+      type: object
+      properties:
+        device:
+          type: string
+          example: "/dev/sda1"
+        total_bytes:
+          type: integer
+          format: uint64
+          nullable: true
+          example: 1099511627776
+        free_bytes:
+          type: integer
+          format: uint64
+          nullable: true
+          example: 549755813888
+        used_bytes:
+          type: integer
+          format: uint64
+          nullable: true
+          example: 549755813888
+        usage_percent:
+          type: number
+          nullable: true
+          example: 50.0
+        total_inodes:
+          type: integer
+          format: uint64
+          nullable: true
+          example: 1000000
+        free_inodes:
+          type: integer
+          format: uint64
+          nullable: true
+          example: 500000
+        used_inodes:
+          type: integer
+          format: uint64
+          nullable: true
+          example: 500000
+        inodes_usage_percent:
+          type: number
+          nullable: true
+          example: 50.0
+        read_bytes:
+          type: integer
+          format: uint64
+          nullable: true
+          example: 1024000
+        write_bytes:
+          type: integer
+          format: uint64
+          nullable: true
+          example: 512000
+        read_time:
+          type: integer
+          format: uint64
+          nullable: true
+          example: 1000
+        write_time:
+          type: integer
+          format: uint64
+          nullable: true
+          example: 500
+    HostData:
+      type: object
+      properties:
+        os:
+          type: string
+          example: "linux"
+        platform:
+          type: string
+          example: "debian"
+        kernel_version:
+          type: string
+          example: "5.4.0-42-generic"
+    MetricErrorObject:
+      type: object
+      properties:
+        metric:
+          type: array
+          items:
+            type: string
+            example: "cpu.temperature"
+        error:
+          type: string
+    NetworkMetricResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/NetData'
+        capture:
+          $ref: '#/components/schemas/CaptureMetadata'
+        errors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MetricErrorObject'
+    SmartMetricResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/SmartData'
+        capture:
+          $ref: '#/components/schemas/CaptureMetadata'
+        errors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MetricErrorObject'
+    CaptureMetadata:
+      type: object
+      properties:
+        version:
+          type: string
+        mode:
+          type: string
+    NetData:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "eth0"
+        bytes_sent:
+          type: integer
+          format: uint64
+          example: 1024
+        bytes_recv:
+          type: integer
+          format: uint64
+          example: 2048
+        packets_sent:
+          type: integer
+          format: uint64
+          example: 100
+        packets_recv:
+          type: integer
+          format: uint64
+          example: 200
+        err_in:
+          type: integer
+          format: uint64
+          example: 0
+        err_out:
+          type: integer
+          format: uint64
+          example: 0
+        drop_in:
+          type: integer
+          format: uint64
+          example: 0
+        drop_out:
+          type: integer
+          format: uint64
+          example: 0
+        fifo_in:
+          type: integer
+          format: uint64
+          example: 0
+        fifo_out:
+          type: integer
+          format: uint64
+          example: 0
+    SmartData:
+      type: object
+      properties:
+        available_spare:
+          type: string
+          example: "100%"
+        available_spare_threshold:
+          type: string
+          example: "10%"
+        controller_busy_time:
+          type: string
+          example: "0"
+        critical_warning:
+          type: string
+          example: "0"
+        data_units_read:
+          type: string
+          example: "1234567"
+        data_units_written:
+          type: string
+          example: "7654321"
+        host_read_commands:
+          type: string
+          example: "100000"
+        host_write_commands:
+          type: string
+          example: "50000"
+        percentage_used:
+          type: string
+          example: "5"
+        power_cycles:
+          type: string
+          example: "100"
+        power_on_hours:
+          type: string
+          example: "1000"
+        smart_overall_health_self_assessment_test_result:
+          type: string
+          example: "PASSED"
+        temperature:
+          type: string
+          example: "35C"
+        unsafe_shutdowns:
+          type: string
+          example: "0"

@@ -9,13 +9,19 @@ import (
 
 // Round a float to a given precision and return the pointer of the result
 func RoundFloatPtr(val float64, precision uint) *float64 {
-	ratio := math.Pow(10, float64(precision))
-	prc := math.Round(val*ratio) / ratio
-	return &prc
+	r := RoundFloat(val, precision)
+	return &r
 }
 
-func RandomIntPtr(max int64) *int {
-	n, err := rand.Int(rand.Reader, big.NewInt(max))
+// Round a float to a given precision and return the result
+func RoundFloat(val float64, precision uint) float64 {
+	ratio := math.Pow(10, float64(precision))
+	prc := math.Round(val*ratio) / ratio
+	return prc
+}
+
+func RandomIntPtr(maximum int64) *int {
+	n, err := rand.Int(rand.Reader, big.NewInt(maximum))
 	if err != nil {
 		panic(err) // handle error appropriately in production
 	}

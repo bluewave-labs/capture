@@ -7,6 +7,7 @@
 *.dll
 *.so
 *.dylib
+dist
 
 # Test binary, built with `go test -c`
 *.test
@@ -23,3 +24,14 @@ go.work.sum
 
 # env file
 .env
+
+# Editor directories
+.idea
+
+# air-verse/air tmp directory
+tmp
+
+# schemathesis directories, used for API Contract testing
+.hypothesis/
+schemathesis-report/
+.schemathesis-report/

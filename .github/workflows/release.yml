@@ -1,0 +1,43 @@
+name: release
+
+on:
+  push:
+    tags:
+      # It will be triggered when a new tag starting with 'v' is pushed
+      # v1.0.0, v1.0.1, ...
+      - 'v*'
+
+permissions:
+      contents: write
+      packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-22.04
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      -
+        name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23.1
+      - 
+        name: Install Syft
+        run: |
+          curl -sSfL https://get.anchore.io/syft | sudo sh -s -- -b /usr/local/bin
+      -
+        name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean
+        env:
+          # Pass the GitHub token to GoReleaser
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Pass the registry and image name to GoReleaser
+          KO_DOCKER_REPO: ghcr.io/bluewave-labs/capture
