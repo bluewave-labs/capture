@@ -39,6 +39,7 @@ Read a detailed structure of Capture if you would like to deep dive into the arc
    ```bash
    git clone https://github.com/bluewave-labs/capture.git
    cd capture
+   ```
 
 2. **Install Dependencies**:
 
@@ -64,16 +65,18 @@ Read a detailed structure of Capture if you would like to deep dive into the arc
 1. **Create a Branch**: Use a descriptive name for your branch.
 
    ```bash
-   git checkout -b feature/your-feature-name
+   git switch -c feature/your-feature-name
    ```
 
 2. **Make Your Changes**: Ensure code is clean and well-documented.
 3. **Test Your Changes**: Verify that everything works as expected.
 4. **Commit and Push**:
 
+    Please follow [conventional commit messages](https://www.conventionalcommits.org/en/v1.0.0/).
+
    ```bash
    git add .
-   git commit -m "Brief description of changes"
+   git commit -m "feat: add new feature"
    git push origin feature/your-feature-name
    ```
 
