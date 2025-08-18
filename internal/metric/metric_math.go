@@ -7,19 +7,20 @@ import (
 	"math/big"
 )
 
-// Round a float to a given precision and return the pointer of the result
+// RoundFloatPtr rounds a float to a given precision and returns a pointer to the result.
 func RoundFloatPtr(val float64, precision uint) *float64 {
 	r := RoundFloat(val, precision)
 	return &r
 }
 
-// Round a float to a given precision and return the result
+// RoundFloat rounds a float to a given precision and returns the result.
 func RoundFloat(val float64, precision uint) float64 {
 	ratio := math.Pow(10, float64(precision))
 	prc := math.Round(val*ratio) / ratio
 	return prc
 }
 
+// RandomIntPtr generates a random integer up to a maximum value and returns a pointer to it.
 func RandomIntPtr(maximum int64) *int {
 	n, err := rand.Int(rand.Reader, big.NewInt(maximum))
 	if err != nil {
@@ -29,6 +30,7 @@ func RandomIntPtr(maximum int64) *int {
 	return &result
 }
 
+// RandomUInt64Ptr generates a random uint64 and returns a pointer to it.
 func RandomUInt64Ptr() *uint64 {
 	var b [8]byte
 	_, err := rand.Read(b[:])
@@ -39,6 +41,7 @@ func RandomUInt64Ptr() *uint64 {
 	return &result
 }
 
+// RandomFloatPtr generates a random float64 and returns a pointer to it.
 func RandomFloatPtr() *float64 {
 	var b [8]byte
 	_, err := rand.Read(b[:])

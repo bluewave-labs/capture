@@ -31,7 +31,7 @@ func (s *Server) Serve() {
 	log.Printf("server started on %s", s.Server.Addr)
 }
 
-// Shutdown gracefully shuts down the server with a timeout.
+// GracefulShutdown gracefully shuts down the server with a timeout.
 func (s *Server) GracefulShutdown(timeout time.Duration) {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -87,7 +87,7 @@ func NewServer(config *config.Config, handler http.Handler, metadata *handler.Ca
 	}
 	return &Server{
 		Server: &http.Server{
-			Addr:              ":" + config.Port,
+			Addr:              "0.0.0.0:" + config.Port,
 			Handler:           handler,
 			ReadHeaderTimeout: 5 * time.Second,
 		},
