@@ -6,6 +6,10 @@ import (
 	"github.com/mstrYoda/go-arctest/pkg/arctest"
 )
 
+// TestArchitecture tests the Capture's architecture rules.
+//
+// Rules:
+//   - cmd should not depend on internal/handler
 func TestArchitecture(t *testing.T) {
 	arch, err := arctest.New("../")
 	if err != nil {
@@ -17,7 +21,7 @@ func TestArchitecture(t *testing.T) {
 		t.Fatalf("Failed to parse packages: %v", err)
 	}
 
-	// Architecture Rule: CMD should not depend on internal/handler
+	// Architecture Rule: cmd should not depend on internal/handler
 	cmdDoesNotDependOnHandler, err := arch.DoesNotDependOn("cmd.*$", "internal/handler.*$")
 	if err != nil {
 		t.Fatalf("Failed to create dependency rule: %v", err)
