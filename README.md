@@ -16,6 +16,23 @@
 
 Capture is a hardware monitoring agent that collects hardware information from the host machine and exposes it through a RESTful API. The agent is designed to be lightweight and easy to use.
 
+## Features
+
+- CPU Monitoring
+  - CPU Temperature
+  - CPU Load
+  - CPU Frequency
+  - CPU Usage
+- Memory Monitoring
+- Disk Monitoring
+  - Usage
+  - Inode Usage
+  - Read/Write Bytes
+- S.M.A.R.T. (System Monitoring and Reporting Tool) monitoring
+- Network Monitoring
+- Docker Container Monitoring
+- GPU Monitoring (soon)
+
 ## Quick Start (Docker)
 
 ```shell
