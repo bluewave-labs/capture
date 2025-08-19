@@ -19,19 +19,19 @@ Capture is a hardware monitoring agent that collects hardware information from t
 ## Features
 
 - CPU Monitoring
-  - CPU Temperature
-  - CPU Load
-  - CPU Frequency
-  - CPU Usage
+  - Temperature
+  - Load
+  - Frequency
+  - Usage
 - Memory Monitoring
 - Disk Monitoring
   - Usage
   - Inode Usage
   - Read/Write Bytes
-- S.M.A.R.T. (System Monitoring and Reporting Tool) monitoring
+- S.M.A.R.T. Monitoring (Self-Monitoring, Analysis and Reporting Technology)
 - Network Monitoring
 - Docker Container Monitoring
-- GPU Monitoring (soon)
+- GPU Monitoring (coming soon)
 
 ## Quick Start (Docker)
 
