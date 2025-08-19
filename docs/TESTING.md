@@ -53,3 +53,20 @@ or
 ```bash
 API_SECRET=your_api_secret_key just openapi-contract-test
 ```
+
+## Benchmarking
+
+Benchmarking is an essential part of testing to ensure that the system performs well under various conditions. It helps identify performance bottlenecks and areas for optimization.
+
+You can see the `test/benchmark/*_test.go` files for benchmarking tests.
+
+We don't have a dedicated command for benchmarking tests; you can run them manually using the `go test` command:
+
+```bash
+go test -benchmem -run='^$' \
+    -bench . \
+    -cpuprofile=cpu.prof \
+    -memprofile=mem.prof \
+    -count 10 \
+    ./test/benchmark | tee my_benchmark_result.txt
+```
