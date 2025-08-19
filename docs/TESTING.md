@@ -65,8 +65,16 @@ We don't have a dedicated command for benchmarking tests; you can run them manua
 ```bash
 go test -benchmem -run='^$' \
     -bench . \
-    -cpuprofile=cpu.prof \
-    -memprofile=mem.prof \
     -count 10 \
     ./test/benchmark | tee my_benchmark_result.txt
+```
+
+You can also profile the tests using the `-cpuprofile` and `-memprofile` flags:
+
+```bash
+go test -benchmem -run='^$' \
+    -bench . \
+    -cpuprofile=cpu.prof \
+    -memprofile=mem.prof \
+    ./test/benchmark
 ```
