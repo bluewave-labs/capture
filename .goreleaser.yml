@@ -4,10 +4,14 @@ project_name: capture
 builds:
   - id: capture
     main: ./cmd/capture
-    ldflags:
+    ldflags: &common_ldflags
       - -s -w
       - -extldflags "-static"
       - -X "main.Version={{.Version}}"
+      - -X "main.Commit={{.Commit}}"
+      - -X "main.CommitDate={{.CommitDate}}"
+      - -X "main.CompiledAt={{.Date}}"
+      - -X "main.GitTag={{.Tag}}"
     env:
       - CGO_ENABLED=0
     goos:
@@ -39,10 +43,7 @@ kos:
     main: ./cmd/capture
     flags:
       - -trimpath
-    ldflags:
-      - -s -w
-      - -extldflags "-static"
-      - -X "main.Version={{.Version}}"
+    ldflags: *common_ldflags
     creation_time: "{{.CommitTimestamp}}"
     sbom: spdx
     env:
