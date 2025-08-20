@@ -9,11 +9,6 @@ type APIResponse struct {
 }
 
 type CaptureMeta struct {
-	Version    string `json:"version"`
-	Mode       string `json:"mode"`
-	Commit     string `json:"commit"`
-	CommitDate string `json:"commit_date"`
-	CompiledAt string `json:"compiled_at"`
-	GitTag     string `json:"git_tag"`
-	GitTagURL  string `json:"git_tag_url"`
+	Version string `json:"version"`
+	Mode    string `json:"mode"`
 }

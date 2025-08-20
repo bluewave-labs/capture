@@ -33,8 +33,6 @@ var (
 	CompiledAt = "unknown"
 	// GitTag contains the Git tag associated with the build, if any.
 	GitTag = "unknown"
-	// GitTagURL holds the URL of the Git tag, if any.
-	GitTagURL = "https://github.com/bluewave-labs/capture/releases/tag/" + GitTag
 )
 
 func main() {
@@ -50,7 +48,6 @@ func main() {
 		fmt.Printf("Commit Date      : %s\n", CommitDate)
 		fmt.Printf("Compiled At      : %s\n", CompiledAt)
 		fmt.Printf("Git Tag          : %s\n", GitTag)
-		fmt.Printf("Git Tag URL      : %s\n", GitTagURL)
 		os.Exit(0)
 	}
 
@@ -60,12 +57,7 @@ func main() {
 	)
 
 	srv := server.NewServer(appConfig, nil, &handler.CaptureMeta{
-		Version:    Version,
-		Commit:     Commit,
-		CommitDate: CommitDate,
-		CompiledAt: CompiledAt,
-		GitTag:     GitTag,
-		GitTagURL:  GitTagURL,
+		Version: Version,
 	})
 	log.Println("WARNING: Remember to add http://" + server.GetLocalIP() + ":" + appConfig.Port + "/api/v1/metrics to your Checkmate Infrastructure Dashboard. Without this endpoint, system metrics will not be displayed.")
 
