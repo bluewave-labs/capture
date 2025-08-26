@@ -1,0 +1,33 @@
+networks:
+  capture-network:
+    driver: bridge
+
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+    networks:
+      - capture-network
+
+  capture:
+    image: ghcr.io/bluewave-labs/capture:latest
+    restart: unless-stopped
+    expose:
+      - "59232"
+    environment:
+      - API_SECRET=REPLACE_WITH_YOUR_SECRET
+      - GIN_MODE=release
+    volumes:
+      - /etc/os-release:/etc/os-release:ro
+    networks:
+      - capture-network
+
+volumes:
+  caddy_data:

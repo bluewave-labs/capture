@@ -16,6 +16,20 @@
 
 Capture is a hardware monitoring agent that collects hardware information from the host machine and exposes it through a RESTful API. The agent is designed to be lightweight and easy to use.
 
+- [Features](#features)
+- [Quick Start (Docker)](#quick-start-docker)
+- [Quick Start (Docker Compose)](#quick-start-docker-compose)
+- [Configuration](#configuration)
+- [Installation Options](#installation-options)
+  - [Docker (Recommended)](#docker-recommended)
+- [System Installation](#system-installation)
+- [Reverse Proxy and SSL](#reverse-proxy-and-ssl)
+  - [Caddy](#caddy)
+- [API Documentation](#api-documentation)
+- [Contributing](#contributing)
+- [Star History](#star-history)
+- [License](#license)
+
 ## Features
 
 - CPU Monitoring
@@ -126,6 +140,36 @@ Choose one of these methods:
    cd capture
    just build   # or: go build -o dist/capture ./cmd/capture/
    ```
+
+## Reverse Proxy and SSL
+
+You can use a reverse proxy in front of the Capture service to handle HTTPS requests and SSL termination.
+
+### Caddy
+
+```lua
+├deployment/reverse-proxy-compose/
+├── caddy/
+│   └── Caddyfile
+└── caddy.compose.yml
+```
+
+1. Go to the `deployment/reverse-proxy-compose` directory
+
+    ```shell
+    cd deployment/reverse-proxy-compose
+    ```
+
+2. Replace `replacewithyourdomain.com` with your actual domain in [deployment/reverse-proxy-compose/caddy/Caddyfile](./deployment/reverse-proxy-compose/caddy/Caddyfile)
+3. Set `API_SECRET` environment variable for the Capture service in [deployment/reverse-proxy-compose/caddy.compose.yml](./deployment/reverse-proxy-compose/caddy.compose.yml).
+4. Ensure your domain’s DNS A/AAAA records point to this server’s IP.
+5. Open inbound TCP ports 80 and 443 on your firewall/security group.
+
+Start the Caddy reverse proxy
+
+```shell
+docker compose -f caddy.compose.yml up -d
+```
 
 ## API Documentation
 

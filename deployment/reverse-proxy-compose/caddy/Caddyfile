@@ -1,0 +1,3 @@
+replacewithyourdomain.com {
+  reverse_proxy capture:59232
+}
