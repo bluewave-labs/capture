@@ -1,30 +1,45 @@
 [Unit]
-Description=Capture Service
+Description=Capture Hardware Monitoring Agent
 Documentation=https://docs.checkmate.so/users-guide/server-monitoring-agent
 After=network.target
+Wants=network.target
 
 [Service]
-## TODO: Replace with your binary path
-ExecStart=YOUR_PATH/capture
-WorkingDirectory=YOUR_PATH
-Restart=always
-RestartSec=3
 Type=simple
+User=capture
+Group=capture
+WorkingDirectory=/opt/capture
+
+# Use configuration file (recommended)
+ExecStart=/opt/capture/capture --config /etc/capture/capture.yaml
+
+# Alternative: Use environment variables for backward compatibility
+# ExecStart=/opt/capture/capture
+# Environment="API_SECRET=your_secret_here"
+# Environment="PORT=59232"
+# Environment="GIN_MODE=release"
+
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=capture
+
+# Security settings
+NoNewPrivileges=yes
 ProtectSystem=strict
-ProtectHome=true
-NoNewPrivileges=true
-RestrictNamespaces=yes
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=no
+ProtectHostname=yes
 ProtectKernelTunables=yes
 ProtectKernelLogs=yes
 ProtectControlGroups=yes
-
-## TODO: REPLACE WITH YOUR SECRET
-Environment="API_SECRET=your_secret_here"
-Environment="GIN_MODE=release"
-
-## TODO: Replace with your user and group names
-User=user_name
-Group=group_name
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
 
 [Install]
 WantedBy=multi-user.target

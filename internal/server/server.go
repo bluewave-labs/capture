@@ -63,7 +63,7 @@ func InitializeHandler(config *config.Config, metadata *handler.CaptureMeta) htt
 	r.GET("/health", handler.Health)
 
 	apiV1 := r.Group("/api/v1")
-	apiV1.Use(middleware.AuthRequired(config.APISecret))
+	apiV1.Use(middleware.AuthRequired(config.Server.APISecret))
 
 	// Create metrics handler
 	metricsHandler := handler.NewMetricsHandler(metadata)
@@ -87,7 +87,7 @@ func NewServer(config *config.Config, handler http.Handler, metadata *handler.Ca
 	}
 	return &Server{
 		Server: &http.Server{
-			Addr:              "0.0.0.0:" + config.Port,
+			Addr:              "0.0.0.0:" + config.Server.Port,
 			Handler:           handler,
 			ReadHeaderTimeout: 5 * time.Second,
 		},

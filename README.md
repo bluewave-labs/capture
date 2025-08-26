@@ -63,21 +63,101 @@ services:
 
 ## Configuration
 
-| Variable     | Description                                                                                                                                                         | Default | Required |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------- |
-| `API_SECRET` | Authentication key ([Must match the secret you enter on Checkmate](https://docs.checkmate.so/users-guide/infrastructure-monitor#step-2-configure-general-settings)) | -       | Yes      |
-| `PORT`       | Server port number                                                                                                                                                  | 59232   | No       |
-| `GIN_MODE`   | Gin(web framework) mode. Debug is for development                                                                                                                                  | release | No       |
+Capture supports flexible configuration through YAML files, environment variables, or command-line flags. Configuration files are loaded using [Viper](https://github.com/spf13/viper) with automatic environment variable binding.
 
-Example configurations:
+### Quick Configuration Setup
 
-```shell
-# Minimal
-API_SECRET=your-secret-key ./capture
+1. **Generate a configuration file:**
+   ```shell
+   ./capture --generate-config capture.yaml
+   ```
 
-# Complete
-API_SECRET=your-secret-key PORT=59232 GIN_MODE=release ./capture
+2. **Edit the configuration file:**
+   ```yaml
+   server:
+     api_secret: "your-secure-secret-here"  # Set your API secret
+     port: "59232"
+   ```
+
+3. **Run with configuration file:**
+   ```shell
+   ./capture --config capture.yaml
+   ```
+
+### Configuration Methods
+
+#### Method 1: Configuration File (Recommended)
+```yaml
+version: 1
+
+server:
+  port: "59232"
+  api_secret: "your-secure-secret-here"
+
+# Optional: Configure targets for data forwarding
+targets:
+  - name: "My Checkmate Instance"
+    endpoint: "https://checkmate.example.com/api/v1/metrics"
+    api_secret: "checkmate-api-secret"
+
+# Optional: External monitoring plugins
+plugins:
+  - name: "custom-health-check"
+    command: "/usr/local/bin/health-check.sh"
+
+log_level: "info"
 ```
+
+#### Method 2: Environment Variables
+```shell
+# Basic configuration
+export API_SECRET=your-secret-key
+export PORT=59232
+./capture
+
+# Advanced configuration with Viper naming
+export CAPTURE_SERVER_API_SECRET=your-secret-key
+export CAPTURE_SERVER_PORT=59232
+export CAPTURE_LOG_LEVEL=debug
+./capture
+```
+
+#### Method 3: Command Line Flags
+```shell
+./capture --config /path/to/config.yaml
+./capture --show-config                    # Show current configuration
+./capture --validate-config config.yaml    # Validate configuration file
+```
+
+### Configuration Options
+
+| Variable/Config | Environment Variable | Description | Default | Required |
+|-----------------|---------------------|-------------|---------|----------|
+| `server.api_secret` | `API_SECRET` or `CAPTURE_SERVER_API_SECRET` | Authentication key ([Must match Checkmate secret](https://docs.checkmate.so/users-guide/infrastructure-monitor#step-2-configure-general-settings)) | - | Yes |
+| `server.port` | `PORT` or `CAPTURE_SERVER_PORT` | Server port number | 59232 | No |
+| `log_level` | `CAPTURE_LOG_LEVEL` | Logging level (error/warn/info/debug) | info | No |
+| `targets` | - | Checkmate instances for data forwarding | [] | No |
+| `plugins` | - | External monitoring scripts | [] | No |
+
+### Configuration File Locations
+
+Capture automatically searches for configuration files in:
+1. Current directory: `./capture.yaml`
+2. Config directory: `./config/capture.yaml` 
+3. User home: `$HOME/.capture/capture.yaml`
+4. System: `/etc/capture/capture.yaml`
+
+See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for complete configuration documentation.
+
+### Legacy Environment Variables
+
+For backward compatibility, these environment variables are still supported:
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `API_SECRET` | Authentication key | - | Yes |
+| `PORT` | Server port number | 59232 | No |
+| `GIN_MODE` | Gin framework mode | release | No |
 
 ## Installation Options
 

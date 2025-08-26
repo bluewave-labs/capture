@@ -1,0 +1,9 @@
+# Minimal capture configuration
+version: 1
+
+server:
+  port: "59232"
+  api_secret: "my-secure-secret"
+
+# Optional: Add logging level
+log_level: "info"

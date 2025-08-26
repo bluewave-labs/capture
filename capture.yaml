@@ -1,0 +1,41 @@
+version: 1
+
+# Server configuration for the capture HTTP server
+server:
+  port: "59232"  # Port to listen on (default: 59232)
+  api_secret: "your-secure-api-secret-here"  # Required: API secret for authentication
+
+# Targets are the Checkmate instances to which the capture will send data
+# Each target can have its own timeout, retry delay, and retry count
+targets:
+  - name: "Primary Checkmate Instance"
+    endpoint: "https://checkmate.example.com/api/v1/metrics"
+    api_secret: "checkmate-api-secret-here"
+    timeout: "30s"
+    retry_delay: "5s"
+    retry_count: 3
+
+  - name: "Secondary Checkmate Instance"
+    endpoint: "https://backup.checkmate.example.com/api/v1/metrics"
+    api_secret: "backup-checkmate-api-secret"
+    # If not specified, will use global settings below
+
+# Global configuration for all targets (applied when target-specific settings are not provided)
+global_interval: "1m"      # How often to collect and send metrics
+global_timeout: "30s"      # Request timeout
+global_retry_delay: "5s"   # Delay between retries
+global_retry_count: 3      # Number of retries for failed requests
+
+# Logging configuration
+log_level: "info"  # Options: error, warn, info, debug
+
+# External plugins - scripts or programs that return status codes
+plugins:
+  - name: "disk-health-check"
+    command: "/usr/local/bin/check-disk-health.sh"
+  
+  - name: "custom-service-monitor"
+    command: "/opt/capture/plugins/service-monitor.py --service nginx"
+  
+  - name: "database-connectivity"
+    command: "/usr/bin/pg_isready -h localhost -p 5432"
