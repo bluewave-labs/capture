@@ -47,8 +47,9 @@ func readCPUFreqFile(path string) (int, error) {
 func CPUTemperature() ([]float32, error) {
 	// Look in all these folders for core temp
 	corePaths := []string{
-		"/sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input",
-		"/sys/class/hwmon/hwmon*/temp*_input",
+		"/sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input", // hwmon
+		"/sys/class/hwmon/hwmon*/temp*_input",                       // hwmon
+		"/sys/class/thermal/thermal_zone0/temp",                     // thermal_zone
 	}
 
 	var temps []float32
@@ -61,16 +62,24 @@ func CPUTemperature() ([]float32, error) {
 		}
 		// Loop over temp_input paths
 		for _, path := range matches {
-			// Look in the corresponding label to see if this is a core temp
-			labelPath := strings.Replace(path, "_input", "_label", 1)
-			if label, err := os.ReadFile(labelPath); err == nil {
-				labelStr := strings.ToLower(strings.TrimSpace(string(label)))
-				// Only process if it's a core
-				// * tctl is the temperature control value for AMD processors. We should also consider it as a core temperature.
-				if strings.Contains(labelStr, "core") || strings.Contains(labelStr, "tctl") {
-					if temp, err := readTempFile(path); err == nil {
-						temps = append(temps, temp)
+			// For hwmon paths, check the label to see if this is a core temp
+			if strings.Contains(path, "hwmon") {
+				labelPath := strings.Replace(path, "_input", "_label", 1)
+				if label, err := os.ReadFile(labelPath); err == nil {
+					labelStr := strings.ToLower(strings.TrimSpace(string(label)))
+
+					// Only process if it's a core
+					// * tctl is the temperature control value for AMD processors. We should also consider it as a core temperature.
+					if strings.Contains(labelStr, "core") || strings.Contains(labelStr, "tctl") {
+						if temp, err := readTempFile(path); err == nil {
+							temps = append(temps, temp)
+						}
 					}
+				}
+			} else {
+				// For non-hwmon paths (like thermal_zone), read directly
+				if temp, err := readTempFile(path); err == nil {
+					temps = append(temps, temp)
 				}
 			}
 		}
