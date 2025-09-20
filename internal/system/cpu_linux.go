@@ -78,7 +78,7 @@ func CPUTemperature() ([]float32, error) {
 	corePaths := []string{
 		"/sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input", // hwmon
 		"/sys/class/hwmon/hwmon*/temp*_input",                       // hwmon
-		// "/sys/class/thermal/thermal_zone0/temp",                     // thermal_zone. it's the same of /sys/class/hwmon/hwmon0/temp1_input
+		// "/sys/class/thermal/thermal_zone0/temp",                     // thermal_zone. it's the same as /sys/class/hwmon/hwmon0/temp1_input
 	}
 
 	var temps []float32
