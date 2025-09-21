@@ -52,17 +52,15 @@ func isValidCPUTempSensor(path string) bool {
 		return true
 	}
 
-	// For hwmon paths, check the label if it exists
 	labelPath := strings.Replace(path, "_input", "_label", 1)
-	if label, err := os.ReadFile(labelPath); err == nil {
-		labelStr := strings.ToLower(strings.TrimSpace(string(label)))
-		// Only process if it's a core or tctl (AMD temperature control value)
-		return strings.Contains(labelStr, "core") || strings.Contains(labelStr, "tctl")
+	label, err := os.ReadFile(labelPath)
+	if err != nil {
+		// No label file exists, assume it could be a CPU temperature sensor
+		return true
 	}
 
-	// No label file exists, assume it could be a CPU temperature sensor
-	// This handles cases where hwmon devices don't provide labels but still contain valid CPU temp data
-	return true
+	labelStr := strings.ToLower(strings.TrimSpace(string(label)))
+	return strings.Contains(labelStr, "core") || strings.Contains(labelStr, "tctl")
 }
 
 // addTemperatureIfValid reads temperature from path and adds it to temps slice if successful
@@ -112,6 +110,6 @@ func CPUCurrentFrequency() (int, error) {
 		return 0, cpuFrequencyError
 	}
 
-	// Convert frequency to mHz
+	// Convert kHz to MHz
 	return frequency / 1000, nil
 }
