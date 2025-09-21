@@ -4,6 +4,18 @@
 
 Date-Format: YYYY-MM-DD
 
+## 1.3.1 (2025-09-21)
+
+This is a patch release that addresses a bug in the CPU temperature validation logic on some Linux systems and adding more build metadata to `capture --version` output.
+
+- [1e14393](https://github.com/bluewave-labs/capture/commit/1e14393a8139b50503de7a90b07dd9de819cacdb) Update linting tools to include go vet and staticcheck (#118)
+- [ac0f516](https://github.com/bluewave-labs/capture/commit/ac0f516dbb25c808ccbb317d47fc597864c26155) feat: Add more build metadata like commit hash, commit date, build date and git tag (#121)
+- [515fa5c](https://github.com/bluewave-labs/capture/commit/515fa5cada6e5180a79b35af072fdb1af59c1d23) fix(linux-cpu): cover CPU temperature sensors without label files (#125)
+
+[Full Changelog](https://github.com/bluewave-labs/capture/compare/v1.3.0...v1.3.1)
+
+Contributors: @mertssmnoglu
+
 ## 1.3.0 (2025-08-06)
 
 The most wanted Capture release is here.
