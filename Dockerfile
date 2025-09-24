@@ -1,5 +1,5 @@
 # Use golang:1.23.1-alpine as the base image.
-FROM golang:1.23.1-alpine AS builder
+FROM golang:1.24.7-alpine AS builder
 COPY . /app
 # Change directory and build the binary. Build command is also used to download the dependencies.
 RUN cd /app && go build -o capture ./cmd/capture

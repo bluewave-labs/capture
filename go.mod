@@ -1,6 +1,6 @@
 module github.com/bluewave-labs/capture
 
-go 1.23.1
+go 1.24.7
 
 require (
 	github.com/docker/docker v28.1.1+incompatible
