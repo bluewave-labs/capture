@@ -1,6 +1,7 @@
 package metric
 
 import (
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -120,8 +121,9 @@ func collectPartitionMetrics(partition disk.PartitionStat) (*DiskData, CustomErr
 }
 
 // collectIOStats gathers IO-related metrics for a device.
-// Supports LVM/device-mapper by resolving /dev/mapper/* -> /dev/dm-*
-// and trying multiple key candidates against the map returned by disk.IOCounters().
+// Supports LVM/device-mapper by resolving /dev/mapper/* -> /dev/dm-*,
+// searching /sys/block for the matching dm-* device, and trying multiple
+// key candidates against the map returned by disk.IOCounters().
 func collectIOStats(device string) (*disk.IOCountersStat, *CustomErr) {
 	// Get all counters once and look up by key
 	all, err := disk.IOCounters()
@@ -158,7 +160,11 @@ func collectIOStats(device string) (*disk.IOCountersStat, *CustomErr) {
 }
 
 // buildDeviceKeyCandidates returns possible keys for the disk.IOCounters() map.
-// Handles paths like /dev/sda, /dev/nvme0n1, /dev/mapper/vg-lv -> dm-0, etc.
+// Handles paths like /dev/sda, /dev/nvme0n1, and /dev/mapper/vg-lv by:
+//  - stripping /dev/
+//  - taking the basename
+//  - resolving symlinks when applicable
+//  - scanning /sys/block/dm-*/dm/name to find the matching dm-* device
 func buildDeviceKeyCandidates(device string) []string {
 	if runtime.GOOS == "windows" {
 		// On Windows, gopsutil uses names like "C:", so keep as-is.
@@ -172,18 +178,28 @@ func buildDeviceKeyCandidates(device string) []string {
 	// Strip /dev/
 	out = append(out, strings.TrimPrefix(d, "/dev/"))
 	// Basename (e.g., /dev/mapper/vg-lv -> vg-lv)
-	out = append(out, filepath.Base(d))
+	base := filepath.Base(d)
+	out = append(out, base)
 
-	// Resolve symlinks: /dev/mapper/vg-lv -> /dev/dm-0 -> dm-0
+	// Resolve symlinks (works for typical udev/by-id/by-uuid, not for mapper pseudo-devices)
 	if resolved, err := filepath.EvalSymlinks(d); err == nil && resolved != "" {
 		out = append(out, strings.TrimPrefix(resolved, "/dev/"))
 		out = append(out, filepath.Base(resolved))
 	}
 
-	// Deduplicate
+	// If it's an LVM/device-mapper path, try to discover dm-* via /sys/block
+	if strings.HasPrefix(d, "/dev/mapper/") || strings.HasPrefix(base, "dm-") {
+		if dm := findDMForMapperBase(base); dm != "" {
+			// Add dm-* key (this is what gopsutil uses in IOCounters)
+			out = append(out, dm)
+		}
+	}
+
+	// Deduplicate and drop empties
 	seen := map[string]struct{}{}
 	uniq := make([]string, 0, len(out))
 	for _, k := range out {
+		k = strings.TrimSpace(k)
 		if k == "" {
 			continue
 		}
@@ -193,6 +209,49 @@ func buildDeviceKeyCandidates(device string) []string {
 		}
 	}
 	return uniq
+}
+
+// findDMForMapperBase tries to map a /dev/mapper/<name> basename to its dm-*
+// by scanning /sys/block/dm-*/dm/name and comparing values.
+//
+// For LVM, the mapper basename typically matches the content of /sys/block/dm-*/dm/name.
+// Example:
+//   /dev/mapper/ubuntu--vg-ubuntu--lv  ->  /sys/block/dm-0/dm/name == "ubuntu--vg-ubuntu--lv"  => dm-0
+func findDMForMapperBase(mapperBase string) string {
+	const sysBlock = "/sys/block"
+	entries, err := os.ReadDir(sysBlock)
+	if err != nil {
+		return ""
+	}
+
+	for _, e := range entries {
+		name := e.Name()
+		if !strings.HasPrefix(name, "dm-") {
+			continue
+		}
+		// Read /sys/block/dm-*/dm/name to get the logical name
+		dmNamePath := filepath.Join(sysBlock, name, "dm", "name")
+		b, err := os.ReadFile(dmNamePath)
+		if err != nil {
+			continue
+		}
+		dmLogical := strings.TrimSpace(string(b))
+
+		// Compare mapper basename to dm logical name.
+		// LVM encodes '-' as '--' in names; mapperBase already carries that encoding,
+		// and /sys/block/.../dm/name typically matches the same encoding.
+		if dmLogical == mapperBase {
+			return name
+		}
+
+		// Extra tolerance: also try a relaxed comparison removing all slashes
+		// and comparing lowercased (helps in edge cases with udev rules).
+		if strings.EqualFold(strings.ReplaceAll(dmLogical, "/", ""), strings.ReplaceAll(mapperBase, "/", "")) {
+			return name
+		}
+	}
+
+	return ""
 }
 
 // collectUsageStats collects usage-related metrics for a mountpoint.
