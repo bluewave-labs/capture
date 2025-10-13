@@ -45,7 +45,6 @@ kos:
       - -trimpath
     ldflags: *common_ldflags
     creation_time: "{{.CommitTimestamp}}"
-    sbom: spdx
     env:
       - CGO_ENABLED=0
     bare: true
