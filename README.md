@@ -20,12 +20,13 @@ Capture is a hardware monitoring agent that collects hardware information from t
 - [Quick Start (Docker)](#quick-start-docker)
 - [Quick Start (Docker Compose)](#quick-start-docker-compose)
 - [Configuration](#configuration)
+- [Endpoints](#endpoints)
+- [API Documentation](#api-documentation)
 - [Installation Options](#installation-options)
   - [Docker (Recommended)](#docker-recommended)
 - [System Installation](#system-installation)
 - [Reverse Proxy and SSL](#reverse-proxy-and-ssl)
   - [Caddy](#caddy)
-- [API Documentation](#api-documentation)
 - [Contributing](#contributing)
 - [Star History](#star-history)
 - [License](#license)
@@ -81,7 +82,7 @@ services:
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------- |
 | `API_SECRET` | Authentication key ([Must match the secret you enter on Checkmate](https://docs.checkmate.so/users-guide/infrastructure-monitor#step-2-configure-general-settings)) | -       | Yes      |
 | `PORT`       | Server port number                                                                                                                                                  | 59232   | No       |
-| `GIN_MODE`   | Gin(web framework) mode. Debug is for development                                                                                                                                  | release | No       |
+| `GIN_MODE`   | Gin(web framework) mode. Debug is for development                                                                                                                   | release | No       |
 
 Example configurations:
 
@@ -92,6 +93,48 @@ API_SECRET=your-secret-key ./capture
 # Complete
 API_SECRET=your-secret-key PORT=59232 GIN_MODE=release ./capture
 ```
+
+## Endpoints
+
+- **Base URL**: `http://<host>:<PORT>` (default port `59232`)
+- **Authentication**: Every `/api/v1/**` route requires `Authorization: Bearer $API_SECRET`. `/health` stays public so you can use it for liveness checks.
+
+| Method | Path                     | Auth | Description                                                                                         | Notes                                          |
+| ------ | ------------------------ | ---- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `GET`  | `/health`                | ❌    | Liveness probe that returns `"OK"`.                                                                 | Useful for container orchestrators.            |
+| `GET`  | `/api/v1/metrics`        | ✅    | Returns the complete capture payload with CPU, memory, disk, host, SMART, network, and Docker data. | Aggregates every collector.                    |
+| `GET`  | `/api/v1/metrics/cpu`    | ✅    | CPU temps, load, and utilization.                                                                   |                                                |
+| `GET`  | `/api/v1/metrics/memory` | ✅    | Memory totals and usage metrics.                                                                    |                                                |
+| `GET`  | `/api/v1/metrics/disk`   | ✅    | Disk capacity, inode usage, and IO stats.                                                           |                                                |
+| `GET`  | `/api/v1/metrics/host`   | ✅    | Host metadata (OS, uptime, kernel, etc.).                                                           |                                                |
+| `GET`  | `/api/v1/metrics/smart`  | ✅    | S.M.A.R.T. drive health information.                                                                |                                                |
+| `GET`  | `/api/v1/metrics/net`    | ✅    | Interface-level network throughput.                                                                 |                                                |
+| `GET`  | `/api/v1/metrics/docker` | ✅    | Docker container metrics.                                                                           | Use `?all=true` to include stopped containers. |
+
+All responses share the same envelope:
+
+```jsonc
+{
+  "data": {
+    // collector-specific payload
+  },
+  "capture": {
+    "version": "1.0.0",
+    "mode": "release"
+  },
+  "errors": [
+    // optional array of error messages if any collectors failed, can be null
+  ],
+}
+```
+
+Collectors can partially fail; when that happens the API responds with HTTP `207 Multi-Status` and fills `errors` with detailed reasons so you can alert without dropping other metric data.
+
+## API Documentation
+
+Our API is documented in accordance with the OpenAPI spec.
+
+You can find the OpenAPI specifications [here](https://github.com/bluewave-labs/capture/blob/develop/openapi.yml)
 
 ## Installation Options
 
@@ -170,12 +213,6 @@ Start the Caddy reverse proxy
 ```shell
 docker compose -f caddy.compose.yml up -d
 ```
-
-## API Documentation
-
-Our API is documented in accordance with the OpenAPI spec.
-
-You can find the OpenAPI specifications [here](https://github.com/bluewave-labs/capture/blob/develop/openapi.yml)
 
 ## Contributing
 
