@@ -134,7 +134,7 @@ Collectors can partially fail; when that happens the API responds with HTTP `207
 
 Our API is documented in accordance with the OpenAPI spec.
 
-You can find the OpenAPI specifications [here](https://github.com/bluewave-labs/capture/blob/develop/openapi.yml)
+You can find the OpenAPI specifications [in openapi.yml](https://github.com/bluewave-labs/capture/blob/develop/openapi.yml)
 
 ## Installation Options
 
