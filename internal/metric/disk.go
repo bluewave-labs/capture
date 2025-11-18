@@ -218,6 +218,7 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 	defaultDiskData := []*DiskData{
 		{
 			Device:             "unknown",
+			Mountpoint:			"unknown",
 			TotalBytes:         nil,
 			FreeBytes:          nil,
 			UsedBytes:          nil,
