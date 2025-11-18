@@ -102,6 +102,7 @@ func collectPartitionMetrics(partition disk.PartitionStat) (*DiskData, CustomErr
 	// Combine all metrics into a DiskData structure
 	return &DiskData{
 		Device:       partition.Device,
+		Mountpoint:   partition.Mountpoint,
 		TotalBytes:   &usageStats.Total,
 		UsedBytes:    &usageStats.Used,
 		FreeBytes:    &usageStats.Free,
