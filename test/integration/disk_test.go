@@ -20,8 +20,7 @@ func TestDiskMetricsContent(t *testing.T) {
 
 	// Verify that we retrieved at least some metrics
 	if len(metricsSlice) == 0 {
-		t.Log("No disk metrics found. Skipping validation.")
-		return
+		t.Skip("No disk metrics found. This may indicate restricted disk access or a collection failure.")
 	}
 
 	foundValidDisk := false
@@ -41,7 +40,7 @@ func TestDiskMetricsContent(t *testing.T) {
 		if diskData.Mountpoint == "" {
 			t.Errorf("Disk device %s has an empty Mountpoint field", diskData.Device)
 		} else if diskData.Mountpoint == "unknown" {
-+			t.Logf("Disk device %s has default 'unknown' mountpoint (metric collection may have failed)", diskData.Device)
+			t.Logf("Disk device %s has default 'unknown' mountpoint (metric collection may have failed)", diskData.Device)
  		} else {
 			foundValidDisk = true
 		}
@@ -49,6 +48,6 @@ func TestDiskMetricsContent(t *testing.T) {
 
 	// If we iterated through metrics but didn't find any valid disk with a mountpoint, log a warning.
 	if !foundValidDisk {
-		t.Log("WARNING: No valid disks with mountpoints were verified")
+		t.Error("No valid disks with mountpoints were found. The mountpoint feature may not be working correctly.")
 	}
 }
