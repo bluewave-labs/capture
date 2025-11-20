@@ -40,7 +40,9 @@ func TestDiskMetricsContent(t *testing.T) {
 		// Validation: The Mountpoint field must not be empty
 		if diskData.Mountpoint == "" {
 			t.Errorf("Disk device %s has an empty Mountpoint field", diskData.Device)
-		} else {
+		} else if diskData.Mountpoint == "unknown" {
++			t.Logf("Disk device %s has default 'unknown' mountpoint (metric collection may have failed)", diskData.Device)
+ 		} else {
 			foundValidDisk = true
 		}
 	}
