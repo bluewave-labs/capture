@@ -87,6 +87,10 @@ func GetDockerMetrics(all bool) (MetricsSlice, []CustomErr) {
 		metrics = append(metrics, metric)
 	}
 
+	if len(containerErrors) > 0 {
+		return metrics, containerErrors
+	}
+
 	return metrics, nil
 }
 
