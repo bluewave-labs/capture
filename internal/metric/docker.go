@@ -58,7 +58,8 @@ func GetDockerMetrics(all bool) (MetricsSlice, []CustomErr) {
 	var metrics = make(MetricsSlice, 0)
 	var containerErrors []CustomErr
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
 	cli, err := initializeDockerClient()
 	if err != nil {
