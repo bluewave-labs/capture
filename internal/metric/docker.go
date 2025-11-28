@@ -176,6 +176,9 @@ func inspectContainer(ctx context.Context, cli *client.Client, containerID strin
 // extractExposedPorts extracts the exposed ports from a container inspection response.
 func extractExposedPorts(containerInspectResponse container.InspectResponse) []Port {
 	portList := make([]Port, 0)
+	if containerInspectResponse.Config == nil {
+		return portList
+	}
 	for port := range containerInspectResponse.Config.ExposedPorts {
 		portList = append(portList, Port{
 			Port:     port.Port(),
