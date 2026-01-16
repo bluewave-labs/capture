@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -643,5 +644,58 @@ func TestGetProxmoxMetricsContextCancellation(t *testing.T) {
 
 	if err == nil {
 		t.Error("expected error due to timeout, got nil")
+	}
+}
+
+func TestProxmoxClientDoRequestReadsBodyOnce(t *testing.T) {
+	// Verify body is read once regardless of status code
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "test error message"}`))
+	}))
+	defer server.Close()
+
+	client := newProxmoxClient(config.ProxmoxConfig{
+		Host:        server.URL,
+		TokenID:     "root@pam!capture",
+		TokenSecret: "test-secret",
+	})
+
+	_, err := client.doRequest(context.Background(), "/test")
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	// The error should contain the response body
+	if !strings.Contains(err.Error(), "test error message") {
+		t.Errorf("error should contain response body, got: %v", err)
+	}
+}
+
+func TestGetProxmoxMetricsEmptyContainerList(t *testing.T) {
+	// Test handling of empty container list
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := proxmoxResourceResponse{
+			Data: []proxmoxResource{},
+		}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	cfg := config.ProxmoxConfig{
+		Host:        server.URL,
+		TokenID:     "root@pam!capture",
+		TokenSecret: "test-secret",
+	}
+
+	metrics, errs := GetProxmoxMetrics(cfg, false)
+
+	if errs != nil {
+		t.Errorf("unexpected errors: %v", errs)
+	}
+
+	if len(metrics) != 0 {
+		t.Errorf("expected 0 metrics, got %d", len(metrics))
 	}
 }

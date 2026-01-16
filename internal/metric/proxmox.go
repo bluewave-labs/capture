@@ -128,12 +128,17 @@ func (c *proxmoxClient) doRequest(ctx context.Context, path string) ([]byte, err
 	}
 	defer resp.Body.Close()
 
+	// Read body once - limit to 10MB to prevent memory exhaustion
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 10*1024*1024))
+	if err != nil {
+		return nil, fmt.Errorf("reading response body: %w", err)
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(body))
 	}
 
-	return io.ReadAll(resp.Body)
+	return body, nil
 }
 
 // listLXCContainers retrieves all LXC containers from the cluster.
@@ -171,13 +176,13 @@ func (c *proxmoxClient) getContainerStatus(ctx context.Context, node string, vmi
 // If all is true, it includes stopped containers. Otherwise, only running containers are returned.
 // Returns empty data (not an error) if Proxmox is not configured.
 func GetProxmoxMetrics(cfg config.ProxmoxConfig, all bool) (MetricsSlice, []CustomErr) {
-	metrics := make(MetricsSlice, 0)
-	var containerErrors []CustomErr
-
 	// Return empty data if Proxmox is not configured
 	if !cfg.IsConfigured() {
-		return metrics, nil
+		return MetricsSlice{}, nil
 	}
+
+	var metrics MetricsSlice
+	var containerErrors []CustomErr
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

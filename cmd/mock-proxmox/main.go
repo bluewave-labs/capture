@@ -250,7 +250,9 @@ func handleNodeRequests(w http.ResponseWriter, r *http.Request) {
 
 	if len(parts) < 4 || parts[1] != "lxc" || parts[3] != "status" {
 		log.Println("  -> 404 Not Found (invalid path)")
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{"error": "invalid path"})
 		return
 	}
 
@@ -258,7 +260,9 @@ func handleNodeRequests(w http.ResponseWriter, r *http.Request) {
 	vmid, err := strconv.Atoi(vmidStr)
 	if err != nil {
 		log.Printf("  -> 400 Bad Request (invalid vmid: %s)", vmidStr)
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "invalid vmid"})
 		return
 	}
 
@@ -273,7 +277,9 @@ func handleNodeRequests(w http.ResponseWriter, r *http.Request) {
 
 	if container == nil {
 		log.Printf("  -> 404 Not Found (vmid %d not found)", vmid)
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{"error": "container not found"})
 		return
 	}
 
