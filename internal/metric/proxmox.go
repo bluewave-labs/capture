@@ -169,9 +169,9 @@ func (c *proxmoxClient) getContainerStatus(ctx context.Context, node string, vmi
 
 // GetProxmoxMetrics retrieves metrics for all LXC containers from a Proxmox server.
 // If all is true, it includes stopped containers. Otherwise, only running containers are returned.
-// Returns nil data (not an error) if Proxmox is not configured.
+// Returns empty data (not an error) if Proxmox is not configured.
 func GetProxmoxMetrics(cfg config.ProxmoxConfig, all bool) (MetricsSlice, []CustomErr) {
-	var metrics = make(MetricsSlice, 0)
+	metrics := make(MetricsSlice, 0)
 	var containerErrors []CustomErr
 
 	// Return empty data if Proxmox is not configured
@@ -194,15 +194,24 @@ func GetProxmoxMetrics(cfg config.ProxmoxConfig, all bool) (MetricsSlice, []Cust
 		return nil, containerErrors
 	}
 
+	// Filter containers first
+	filteredContainers := make([]proxmoxResource, 0, len(containers))
 	for _, container := range containers {
-		// Skip stopped containers if all is false
 		if !all && container.Status != "running" {
 			continue
 		}
+		filteredContainers = append(filteredContainers, container)
+	}
 
+	// Process containers and collect detailed metrics
+	for _, container := range filteredContainers {
 		metric, customErr := processProxmoxContainer(ctx, client, container)
 		if customErr.Error != "" {
 			containerErrors = append(containerErrors, customErr)
+			// Still add the metric with basic data if we got a partial result
+			if metric.VMID != 0 {
+				metrics = append(metrics, metric)
+			}
 			continue
 		}
 		metrics = append(metrics, metric)
@@ -221,7 +230,11 @@ func processProxmoxContainer(ctx context.Context, client *proxmoxClient, resourc
 	status, err := client.getContainerStatus(ctx, resource.Node, resource.VMID)
 	if err != nil {
 		// Fall back to basic metrics from the resource list if status fails
-		return buildMetricsFromResource(resource), CustomErr{}
+		// Report the error but still return usable data
+		return buildMetricsFromResource(resource), CustomErr{
+			Metric: []string{"proxmox.container.status", fmt.Sprintf("vmid:%d", resource.VMID)},
+			Error:  fmt.Sprintf("failed to get detailed status, using basic metrics: %v", err),
+		}
 	}
 
 	// Calculate memory usage percentage

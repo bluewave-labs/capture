@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/bluewave-labs/capture/internal/config"
 )
@@ -539,5 +540,108 @@ func TestGetProxmoxMetricsAPIError(t *testing.T) {
 
 	if errs[0].Metric[0] != "proxmox.container.list" {
 		t.Errorf("error metric = %v, expected proxmox.container.list", errs[0].Metric[0])
+	}
+}
+
+func TestProcessProxmoxContainerStatusError(t *testing.T) {
+	// Test that when status endpoint fails, we get basic metrics with an error
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api2/json/cluster/resources":
+			response := proxmoxResourceResponse{
+				Data: []proxmoxResource{
+					{
+						VMID:    100,
+						Name:    "webserver",
+						Node:    "pve1",
+						Status:  "running",
+						Type:    "lxc",
+						CPU:     0.15,
+						MaxCPU:  2,
+						Mem:     536870912,
+						MaxMem:  2147483648,
+						Disk:    5368709120,
+						MaxDisk: 21474836480,
+						NetIn:   1073741824,
+						NetOut:  268435456,
+						Uptime:  86400,
+					},
+				},
+			}
+			json.NewEncoder(w).Encode(response)
+		default:
+			// Status endpoint returns error
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	defer server.Close()
+
+	cfg := config.ProxmoxConfig{
+		Host:        server.URL,
+		TokenID:     "root@pam!capture",
+		TokenSecret: "test-secret",
+	}
+
+	metrics, errs := GetProxmoxMetrics(cfg, false)
+
+	// Should still get metrics (basic data)
+	if len(metrics) != 1 {
+		t.Fatalf("expected 1 metric, got %d", len(metrics))
+	}
+
+	// Should have an error reported
+	if len(errs) != 1 {
+		t.Fatalf("expected 1 error, got %d", len(errs))
+	}
+
+	// Verify the error mentions status
+	if errs[0].Metric[0] != "proxmox.container.status" {
+		t.Errorf("error metric = %v, expected proxmox.container.status", errs[0].Metric[0])
+	}
+
+	// Verify basic metrics are present
+	m := metrics[0].(ProxmoxContainerMetrics)
+	if m.VMID != 100 {
+		t.Errorf("VMID = %v, expected 100", m.VMID)
+	}
+	if m.Name != "webserver" {
+		t.Errorf("Name = %v, expected webserver", m.Name)
+	}
+	// Swap should be 0 since we fell back to basic metrics
+	if m.SwapTotal != 0 {
+		t.Errorf("SwapTotal = %v, expected 0 (basic metrics)", m.SwapTotal)
+	}
+}
+
+func TestGetProxmoxMetricsContextCancellation(t *testing.T) {
+	// Test that context cancellation is handled
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Delay response to allow context cancellation
+		time.Sleep(100 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	cfg := config.ProxmoxConfig{
+		Host:        server.URL,
+		TokenID:     "root@pam!capture",
+		TokenSecret: "test-secret",
+	}
+
+	// Create a client with very short timeout to trigger cancellation
+	client := &proxmoxClient{
+		httpClient: &http.Client{
+			Timeout: 1 * time.Millisecond,
+		},
+		baseURL:     cfg.Host,
+		tokenID:     cfg.TokenID,
+		tokenSecret: cfg.TokenSecret,
+	}
+
+	ctx := context.Background()
+	_, err := client.listLXCContainers(ctx)
+
+	if err == nil {
+		t.Error("expected error due to timeout, got nil")
 	}
 }

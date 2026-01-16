@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
+	"math/rand/v2"
 	"net/http"
 	"strconv"
 	"strings"
@@ -189,6 +189,7 @@ func handleClusterResources(w http.ResponseWriter, r *http.Request) {
 
 	if !validateAuth(r) {
 		log.Println("  -> 401 Unauthorized (invalid token)")
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"errors": map[string]string{"username": "invalid token"},
@@ -218,8 +219,8 @@ func handleClusterResources(w http.ResponseWriter, r *http.Request) {
 				containers[i].Mem = variation
 			}
 			// Increment network counters
-			containers[i].NetIn += uint64(rand.Intn(10000))
-			containers[i].NetOut += uint64(rand.Intn(5000))
+			containers[i].NetIn += uint64(rand.IntN(10000))
+			containers[i].NetOut += uint64(rand.IntN(5000))
 			// Increment uptime
 			containers[i].Uptime++
 		}
@@ -235,6 +236,7 @@ func handleNodeRequests(w http.ResponseWriter, r *http.Request) {
 
 	if !validateAuth(r) {
 		log.Println("  -> 401 Unauthorized (invalid token)")
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"errors": map[string]string{"username": "invalid token"},
@@ -296,9 +298,9 @@ func handleNodeRequests(w http.ResponseWriter, r *http.Request) {
 
 	// Add disk I/O for running containers
 	if container.Status == "running" {
-		status.DiskRead = uint64(rand.Int63n(10737418240))   // Up to 10 GiB
-		status.DiskWrite = uint64(rand.Int63n(5368709120))  // Up to 5 GiB
-		status.Swap = uint64(rand.Int63n(int64(status.MaxSwap / 10))) // Up to 10% of max swap
+		status.DiskRead = rand.Uint64N(10737418240)                  // Up to 10 GiB
+		status.DiskWrite = rand.Uint64N(5368709120)                  // Up to 5 GiB
+		status.Swap = rand.Uint64N(status.MaxSwap / 10)              // Up to 10% of max swap
 	}
 
 	log.Printf("  -> 200 OK (container %d: %s)", vmid, container.Name)
