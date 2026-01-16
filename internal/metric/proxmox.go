@@ -153,6 +153,11 @@ func (c *proxmoxClient) listLXCContainers(ctx context.Context) ([]proxmoxResourc
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
 
+	// Handle null data field in JSON response
+	if response.Data == nil {
+		return []proxmoxResource{}, nil
+	}
+
 	return response.Data, nil
 }
 
@@ -175,14 +180,22 @@ func (c *proxmoxClient) getContainerStatus(ctx context.Context, node string, vmi
 // GetProxmoxMetrics retrieves metrics for all LXC containers from a Proxmox server.
 // If all is true, it includes stopped containers. Otherwise, only running containers are returned.
 // Returns empty data (not an error) if Proxmox is not configured.
-func GetProxmoxMetrics(cfg config.ProxmoxConfig, all bool) (MetricsSlice, []CustomErr) {
+// This function is designed to never panic - any unexpected errors are caught and returned as CustomErr.
+func GetProxmoxMetrics(cfg config.ProxmoxConfig, all bool) (metrics MetricsSlice, containerErrors []CustomErr) {
+	// Recover from any unexpected panics to prevent crashing the service
+	defer func() {
+		if r := recover(); r != nil {
+			containerErrors = append(containerErrors, CustomErr{
+				Metric: []string{"proxmox.panic"},
+				Error:  fmt.Sprintf("unexpected panic in Proxmox metrics collection: %v", r),
+			})
+		}
+	}()
+
 	// Return empty data if Proxmox is not configured
 	if !cfg.IsConfigured() {
 		return MetricsSlice{}, nil
 	}
-
-	var metrics MetricsSlice
-	var containerErrors []CustomErr
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -230,7 +243,16 @@ func GetProxmoxMetrics(cfg config.ProxmoxConfig, all bool) (MetricsSlice, []Cust
 }
 
 // processProxmoxContainer processes a single LXC container and returns its metrics.
+// This function is designed to never panic - it always returns valid data or falls back gracefully.
 func processProxmoxContainer(ctx context.Context, client *proxmoxClient, resource proxmoxResource) (ProxmoxContainerMetrics, CustomErr) {
+	// Validate required fields to prevent issues with malformed data
+	if resource.Node == "" {
+		return buildMetricsFromResource(resource), CustomErr{
+			Metric: []string{"proxmox.container.status", fmt.Sprintf("vmid:%d", resource.VMID)},
+			Error:  "container has empty node field, using basic metrics",
+		}
+	}
+
 	// Get detailed status for the container (includes swap and disk I/O)
 	status, err := client.getContainerStatus(ctx, resource.Node, resource.VMID)
 	if err != nil {
@@ -242,7 +264,15 @@ func processProxmoxContainer(ctx context.Context, client *proxmoxClient, resourc
 		}
 	}
 
-	// Calculate memory usage percentage
+	// Guard against nil status (should not happen, but defensive coding)
+	if status == nil {
+		return buildMetricsFromResource(resource), CustomErr{
+			Metric: []string{"proxmox.container.status", fmt.Sprintf("vmid:%d", resource.VMID)},
+			Error:  "received nil status response, using basic metrics",
+		}
+	}
+
+	// Calculate memory usage percentage (safe division)
 	var memoryUsage float64
 	if status.MaxMem > 0 {
 		memoryUsage = float64(status.Mem) / float64(status.MaxMem)

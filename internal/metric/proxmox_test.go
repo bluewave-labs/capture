@@ -699,3 +699,160 @@ func TestGetProxmoxMetricsEmptyContainerList(t *testing.T) {
 		t.Errorf("expected 0 metrics, got %d", len(metrics))
 	}
 }
+
+func TestGetProxmoxMetricsNullDataField(t *testing.T) {
+	// Test handling of null data field in JSON response
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Return {"data": null} which can happen with some API responses
+		w.Write([]byte(`{"data": null}`))
+	}))
+	defer server.Close()
+
+	cfg := config.ProxmoxConfig{
+		Host:        server.URL,
+		TokenID:     "root@pam!capture",
+		TokenSecret: "test-secret",
+	}
+
+	metrics, errs := GetProxmoxMetrics(cfg, false)
+
+	if errs != nil {
+		t.Errorf("unexpected errors: %v", errs)
+	}
+
+	if len(metrics) != 0 {
+		t.Errorf("expected 0 metrics, got %d", len(metrics))
+	}
+}
+
+func TestProcessProxmoxContainerEmptyNode(t *testing.T) {
+	// Test handling of container with empty node field
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api2/json/cluster/resources" {
+			response := proxmoxResourceResponse{
+				Data: []proxmoxResource{
+					{
+						VMID:   100,
+						Name:   "test-container",
+						Node:   "", // Empty node - edge case
+						Status: "running",
+						Type:   "lxc",
+					},
+				},
+			}
+			json.NewEncoder(w).Encode(response)
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	cfg := config.ProxmoxConfig{
+		Host:        server.URL,
+		TokenID:     "root@pam!capture",
+		TokenSecret: "test-secret",
+	}
+
+	metrics, errs := GetProxmoxMetrics(cfg, false)
+
+	// Should still get basic metrics
+	if len(metrics) != 1 {
+		t.Fatalf("expected 1 metric, got %d", len(metrics))
+	}
+
+	// Should have an error about empty node
+	if len(errs) != 1 {
+		t.Fatalf("expected 1 error, got %d", len(errs))
+	}
+
+	if !strings.Contains(errs[0].Error, "empty node") {
+		t.Errorf("expected error about empty node, got: %v", errs[0].Error)
+	}
+}
+
+func TestGetProxmoxMetricsMalformedJSON(t *testing.T) {
+	// Test handling of malformed JSON response
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"data": [{"vmid": "not-a-number"}]}`))
+	}))
+	defer server.Close()
+
+	cfg := config.ProxmoxConfig{
+		Host:        server.URL,
+		TokenID:     "root@pam!capture",
+		TokenSecret: "test-secret",
+	}
+
+	metrics, errs := GetProxmoxMetrics(cfg, false)
+
+	// Should return error, not panic
+	if errs == nil {
+		t.Error("expected errors for malformed JSON")
+	}
+
+	// Metrics should be nil or empty
+	if metrics != nil && len(metrics) > 0 {
+		t.Errorf("expected no metrics for malformed JSON, got %d", len(metrics))
+	}
+}
+
+func TestGetProxmoxMetricsServiceNeverCrashes(t *testing.T) {
+	// Test various edge cases to ensure service stability
+	testCases := []struct {
+		name           string
+		responseBody   string
+		expectedMetric int
+		expectError    bool
+	}{
+		{
+			name:           "empty response",
+			responseBody:   `{}`,
+			expectedMetric: 0,
+			expectError:    false,
+		},
+		{
+			name:           "null data",
+			responseBody:   `{"data": null}`,
+			expectedMetric: 0,
+			expectError:    false,
+		},
+		{
+			name:           "empty array",
+			responseBody:   `{"data": []}`,
+			expectedMetric: 0,
+			expectError:    false,
+		},
+		{
+			name:           "extra fields ignored",
+			responseBody:   `{"data": [], "extra": "field", "unknown": 123}`,
+			expectedMetric: 0,
+			expectError:    false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Write([]byte(tc.responseBody))
+			}))
+			defer server.Close()
+
+			cfg := config.ProxmoxConfig{
+				Host:        server.URL,
+				TokenID:     "root@pam!capture",
+				TokenSecret: "test-secret",
+			}
+
+			// This should never panic
+			metrics, errs := GetProxmoxMetrics(cfg, false)
+
+			if tc.expectError && errs == nil {
+				t.Error("expected errors but got none")
+			}
+
+			if len(metrics) != tc.expectedMetric {
+				t.Errorf("expected %d metrics, got %d", tc.expectedMetric, len(metrics))
+			}
+		})
+	}
+}
