@@ -51,9 +51,17 @@ func main() {
 		os.Exit(0)
 	}
 
-	appConfig = config.NewConfig(
+	proxmoxConfig := config.ProxmoxConfig{
+		Host:          os.Getenv("PROXMOX_HOST"),
+		TokenID:       os.Getenv("PROXMOX_TOKEN_ID"),
+		TokenSecret:   os.Getenv("PROXMOX_TOKEN_SECRET"),
+		SkipTLSVerify: os.Getenv("PROXMOX_SKIP_TLS_VERIFY") == "true",
+	}
+
+	appConfig = config.NewConfigWithProxmox(
 		os.Getenv("PORT"),
 		os.Getenv("API_SECRET"),
+		proxmoxConfig,
 	)
 
 	srv := server.NewServer(appConfig, nil, &handler.CaptureMeta{

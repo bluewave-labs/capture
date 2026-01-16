@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"github.com/bluewave-labs/capture/internal/config"
 	"github.com/bluewave-labs/capture/internal/metric"
 	"github.com/gin-gonic/gin"
 )
 
 type MetricsHandler struct {
-	metadata *CaptureMeta
+	metadata      *CaptureMeta
+	proxmoxConfig config.ProxmoxConfig
 }
 
 func NewMetricsHandler(metadata *CaptureMeta) *MetricsHandler {
@@ -16,6 +18,12 @@ func NewMetricsHandler(metadata *CaptureMeta) *MetricsHandler {
 	return &MetricsHandler{
 		metadata: metadata,
 	}
+}
+
+func NewMetricsHandlerWithProxmox(metadata *CaptureMeta, proxmoxConfig config.ProxmoxConfig) *MetricsHandler {
+	handler := NewMetricsHandler(metadata)
+	handler.proxmoxConfig = proxmoxConfig
+	return handler
 }
 
 func (h *MetricsHandler) handleResponse(c *gin.Context, metrics metric.Metric, errs []metric.CustomErr) {
@@ -72,4 +80,13 @@ func (h *MetricsHandler) MetricsDocker(c *gin.Context) {
 	// This will include all containers if "all" is true, otherwise only running containers
 	dockerMetrics, dockerErrs := metric.GetDockerMetrics(all)
 	h.handleResponse(c, dockerMetrics, dockerErrs)
+}
+
+func (h *MetricsHandler) MetricsProxmox(c *gin.Context) {
+	all := c.Query("all") == "true"
+
+	// Get Proxmox LXC container metrics
+	// If "all" is true, include stopped containers; otherwise only running containers
+	proxmoxMetrics, proxmoxErrs := metric.GetProxmoxMetrics(h.proxmoxConfig, all)
+	h.handleResponse(c, proxmoxMetrics, proxmoxErrs)
 }

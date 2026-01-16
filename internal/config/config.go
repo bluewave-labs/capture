@@ -5,6 +5,18 @@ import "log"
 type Config struct {
 	Port      string
 	APISecret string
+	Proxmox   ProxmoxConfig
+}
+
+type ProxmoxConfig struct {
+	Host          string
+	TokenID       string
+	TokenSecret   string
+	SkipTLSVerify bool
+}
+
+func (p ProxmoxConfig) IsConfigured() bool {
+	return p.Host != "" && p.TokenID != "" && p.TokenSecret != ""
 }
 
 var defaultPort = "59232"
@@ -24,6 +36,12 @@ func NewConfig(port string, apiSecret string) *Config {
 		Port:      port,
 		APISecret: apiSecret,
 	}
+}
+
+func NewConfigWithProxmox(port string, apiSecret string, proxmox ProxmoxConfig) *Config {
+	cfg := NewConfig(port, apiSecret)
+	cfg.Proxmox = proxmox
+	return cfg
 }
 
 func Default() *Config {

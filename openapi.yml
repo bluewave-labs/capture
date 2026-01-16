@@ -197,6 +197,45 @@ paths:
         - type: http
           scheme: bearer
           bearerFormat: JWT
+  /api/v1/metrics/proxmox:
+    get:
+      summary: Read Proxmox LXC container metrics
+      description: Returns metrics for LXC containers running on a Proxmox VE host. Requires PROXMOX_HOST, PROXMOX_TOKEN_ID, and PROXMOX_TOKEN_SECRET environment variables to be configured. Returns empty data if Proxmox is not configured.
+      parameters:
+        - name: all
+          in: query
+          description: Include stopped containers (default false, only running containers)
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProxmoxMetricResponse'
+        '207':
+          description: Multi-Status | Some of the data is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProxmoxMetricResponse'
+        '403':
+          description: Forbidden - Invalid authentication token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token provided"
+      security:
+        - type: http
+          scheme: bearer
+          bearerFormat: JWT
 components:
   schemas:
     AllMetricResponse:
@@ -635,3 +674,108 @@ components:
           type: integer
           format: uint64
           example: 7
+    ProxmoxMetricResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProxmoxContainerData'
+        capture:
+          $ref: '#/components/schemas/CaptureMetadata'
+        errors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MetricErrorObject'
+    ProxmoxContainerData:
+      type: object
+      properties:
+        vmid:
+          type: integer
+          example: 100
+          description: Proxmox VM ID
+        name:
+          type: string
+          example: "webserver"
+          description: Container name
+        node:
+          type: string
+          example: "pve1"
+          description: Proxmox node name
+        status:
+          type: string
+          enum: ["running", "stopped"]
+          example: "running"
+          description: Container status
+        type:
+          type: string
+          example: "lxc"
+          description: Container type (always lxc)
+        uptime:
+          type: integer
+          format: int64
+          example: 86400
+          description: Container uptime in seconds
+        cpu_cores:
+          type: integer
+          example: 2
+          description: Number of CPU cores allocated
+        cpu_usage:
+          type: number
+          example: 0.15
+          description: CPU usage as a fraction (0.0 to 1.0 per core)
+        memory_used:
+          type: integer
+          format: uint64
+          example: 536870912
+          description: Memory used in bytes
+        memory_total:
+          type: integer
+          format: uint64
+          example: 2147483648
+          description: Total memory allocated in bytes
+        memory_usage:
+          type: number
+          example: 0.25
+          description: Memory usage as a fraction (0.0 to 1.0)
+        swap_used:
+          type: integer
+          format: uint64
+          example: 0
+          description: Swap used in bytes
+        swap_total:
+          type: integer
+          format: uint64
+          example: 536870912
+          description: Total swap allocated in bytes
+        disk_used:
+          type: integer
+          format: uint64
+          example: 5368709120
+          description: Disk space used in bytes
+        disk_total:
+          type: integer
+          format: uint64
+          example: 21474836480
+          description: Total disk space allocated in bytes
+        disk_read:
+          type: integer
+          format: uint64
+          example: 1073741824
+          description: Total bytes read from disk
+        disk_write:
+          type: integer
+          format: uint64
+          example: 536870912
+          description: Total bytes written to disk
+        network_in:
+          type: integer
+          format: uint64
+          example: 1073741824
+          description: Total bytes received
+        network_out:
+          type: integer
+          format: uint64
+          example: 268435456
+          description: Total bytes sent

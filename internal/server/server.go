@@ -65,8 +65,8 @@ func InitializeHandler(config *config.Config, metadata *handler.CaptureMeta) htt
 	apiV1 := r.Group("/api/v1")
 	apiV1.Use(middleware.AuthRequired(config.APISecret))
 
-	// Create metrics handler
-	metricsHandler := handler.NewMetricsHandler(metadata)
+	// Create metrics handler with Proxmox config
+	metricsHandler := handler.NewMetricsHandlerWithProxmox(metadata, config.Proxmox)
 
 	// Metrics
 	apiV1.GET("/metrics", metricsHandler.Metrics)
@@ -77,6 +77,7 @@ func InitializeHandler(config *config.Config, metadata *handler.CaptureMeta) htt
 	apiV1.GET("/metrics/smart", metricsHandler.SmartMetrics)
 	apiV1.GET("/metrics/net", metricsHandler.MetricsNet)
 	apiV1.GET("/metrics/docker", metricsHandler.MetricsDocker)
+	apiV1.GET("/metrics/proxmox", metricsHandler.MetricsProxmox)
 
 	return r.Handler()
 }
