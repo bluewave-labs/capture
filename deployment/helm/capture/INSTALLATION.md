@@ -14,7 +14,7 @@ This guide walks you through deploying Capture on a Kubernetes cluster using Hel
 
 ```shell
 git clone https://github.com/bluewave-labs/capture.git
-cd capture/charts/helm/capture
+cd capture/deployment/helm/capture
 ```
 
 ### 2. Customize values.yaml
