@@ -25,7 +25,7 @@ jobs:
 
       - name: Build and Run Server
         env:
-          API_SECRET: ${{ secrets.API_SECRET }}
+          API_SECRET: hardcoded_secret
           GIN_MODE: release
         run: |
           go build -o capture ./cmd/capture
@@ -40,4 +40,4 @@ jobs:
           version: 'latest'
           config-file: 'schemathesis.toml'
         env:
-          API_SECRET: ${{ secrets.API_SECRET }}
+          API_SECRET: hardcoded_secret
