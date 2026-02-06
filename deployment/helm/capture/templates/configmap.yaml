@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "capture.fullname" . }}-config
+  labels:
+{{ include "capture.labels" . | indent 4 }}
+data:
+  PORT: {{ .Values.config.port | quote }}
+  GIN_MODE: {{ .Values.config.ginMode | quote }}

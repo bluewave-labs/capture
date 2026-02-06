@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "capture.fullname" . }}
+  labels:
+{{ include "capture.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+{{ include "capture.selectorLabels" . | indent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "capture.selectorLabels" . | indent 8 }}
+    spec:
+      containers:
+        - name: capture
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+          envFrom:
+            - secretRef:
+                name: {{ include "capture.fullname" . }}-secret
+            - configMapRef:
+                name: {{ include "capture.fullname" . }}-config
+          volumeMounts:
+            {{- if .Values.hostPath.enabled }}
+            - name: os-release
+              mountPath: /etc/os-release
+              readOnly: true
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+      {{- if .Values.hostPath.enabled }}
+      volumes:
+        - name: os-release
+          hostPath:
+            path: {{ .Values.hostPath.path }}
+            type: File
+      {{- end }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      tolerations:
+{{ toYaml .Values.tolerations | indent 8 }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}

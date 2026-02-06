@@ -1,0 +1,29 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/bluewave-labs/capture
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 59232
+
+config:
+  port: "59232"
+  ginMode: "release"
+
+secret:
+  apiSecret: "change-me"
+
+hostPath:
+  enabled: true
+  path: /etc/os-release
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
