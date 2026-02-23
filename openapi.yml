@@ -167,6 +167,36 @@ paths:
         - type: http
           scheme: bearer
           bearerFormat: JWT
+  /api/v1/metrics/docker:
+    get:
+      summary: Read Docker container metrics
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DockerMetricResponse'
+        '207':
+          description: Multi-Status | Some of the data is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DockerMetricResponse'
+        '403':
+          description: Forbidden - Invalid authentication token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid token provided"
+      security:
+        - type: http
+          scheme: bearer
+          bearerFormat: JWT
 components:
   schemas:
     AllMetricResponse:
@@ -372,7 +402,7 @@ components:
           items:
             type: string
             example: "cpu.temperature"
-        error:
+        err:
           type: string
     NetworkMetricResponse:
       type: object
@@ -498,3 +528,113 @@ components:
         unsafe_shutdowns:
           type: string
           example: "0"
+    DockerMetricResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContainerData'
+        capture:
+          $ref: '#/components/schemas/CaptureMetadata'
+        errors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MetricErrorObject'
+    ContainerData:
+      type: object
+      properties:
+        container_id:
+          type: string
+          example: "09e88f793869982fdb86e0ac183a4487a8bcf763179c9bbf2f8d6e25492f23bc"
+        container_name:
+          type: string
+          example: "optimistic_jang"
+        status:
+          type: string
+          enum: ["created", "running", "paused", "restarting", "removing", "exited", "dead"]
+          example: "running"
+        health:
+          $ref: '#/components/schemas/ContainerHealthStatus'
+        running:
+          type: boolean
+          example: true
+        base_image:
+          type: string
+          example: "nginx:latest"
+        exposed_ports:
+          type: array
+          items:
+            $ref: '#/components/schemas/PortData'
+        started_at:
+          type: integer
+          format: int64
+          example: 1701167445
+          description: Unix timestamp
+        finished_at:
+          type: integer
+          format: int64
+          example: 0
+          description: Unix timestamp
+        stats:
+          $ref: '#/components/schemas/ContainerStats'
+    ContainerHealthStatus:
+      type: object
+      properties:
+        healthy:
+          type: boolean
+          example: true
+        source:
+          type: string
+          enum: ["container_health_check", "state_based_health_check"]
+          example: "state_based_health_check"
+        message:
+          type: string
+          example: "Based on container state"
+    PortData:
+      type: object
+      properties:
+        port:
+          type: string
+          example: "80"
+        protocol:
+          type: string
+          example: "tcp"
+    ContainerStats:
+      type: object
+      properties:
+        cpu_percent:
+          type: number
+          example: 0.00
+        memory_usage:
+          type: integer
+          format: uint64
+          example: 4706304
+        memory_limit:
+          type: integer
+          format: uint64
+          example: 16101339136
+        memory_percent:
+          type: number
+          example: 0.03
+        network_rx_bytes:
+          type: integer
+          format: uint64
+          example: 8030
+        network_tx_bytes:
+          type: integer
+          format: uint64
+          example: 126
+        block_read_bytes:
+          type: integer
+          format: uint64
+          example: 3580000
+        block_write_bytes:
+          type: integer
+          format: uint64
+          example: 3140000
+        pids:
+          type: integer
+          format: uint64
+          example: 7

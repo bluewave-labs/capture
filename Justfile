@@ -10,7 +10,8 @@ unit-test:
 	@go test \
 		-v \
 		-timeout 30s \
-		./test/
+		./test/ \
+		./internal/...
 
 integration-test:
 	@go test \

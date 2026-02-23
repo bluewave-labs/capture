@@ -1,12 +1,17 @@
 package metric
 
 import (
+	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 
 	"github.com/shirou/gopsutil/v4/disk"
 )
+
+// sysfsRoot is overridable for tests.
+var sysfsRoot = "/sys"
 
 // isLoopbackDevice checks if the partition is a loopback device.
 func isLoopbackDevice(p disk.PartitionStat) bool {
@@ -87,37 +92,77 @@ func shouldIncludePartition(partition disk.PartitionStat) bool {
 
 // collectPartitionMetrics gathers all required metrics for a single partition.
 func collectPartitionMetrics(partition disk.PartitionStat) (*DiskData, CustomErr) {
-	// Collect IO statistics
+	var errs []CustomErr
+
+	// Collect IO statistics (optional)
 	ioStats, ioErr := collectIOStats(partition.Device)
 	if ioErr != nil {
-		return nil, *ioErr
+		errs = append(errs, *ioErr)
 	}
 
-	// Collect usage statistics
+	// Collect usage statistics (optional)
 	usageStats, usageErr := collectUsageStats(partition.Mountpoint)
 	if usageErr != nil {
-		return nil, *usageErr
+		errs = append(errs, *usageErr)
 	}
 
-	// Combine all metrics into a DiskData structure
-	return &DiskData{
-		Device:       partition.Device,
-		Mountpoint:   partition.Mountpoint,
-		TotalBytes:   &usageStats.Total,
-		UsedBytes:    &usageStats.Used,
-		FreeBytes:    &usageStats.Free,
-		UsagePercent: RoundFloatPtr(usageStats.UsedPercent/100, 4),
+	if ioStats == nil && usageStats == nil {
+		if len(errs) > 0 {
+			return nil, mergeDiskErrors(errs)
+		}
+		return nil, CustomErr{Metric: []string{"disk"}, Error: "no disk stats available"}
+	}
 
-		TotalInodes:        &usageStats.InodesTotal,
-		FreeInodes:         &usageStats.InodesFree,
-		UsedInodes:         &usageStats.InodesUsed,
-		InodesUsagePercent: RoundFloatPtr(usageStats.InodesUsedPercent/100, 4),
+	data := &DiskData{Device: partition.Device, Mountpoint: partition.Mountpoint}
+	if usageStats != nil {
+		data.TotalBytes = &usageStats.Total
+		data.UsedBytes = &usageStats.Used
+		data.FreeBytes = &usageStats.Free
+		data.UsagePercent = RoundFloatPtr(usageStats.UsedPercent/100, 4)
 
-		ReadBytes:  &ioStats.ReadBytes,
-		WriteBytes: &ioStats.WriteBytes,
-		ReadTime:   &ioStats.ReadTime,
-		WriteTime:  &ioStats.WriteTime,
-	}, CustomErr{}
+		data.TotalInodes = &usageStats.InodesTotal
+		data.FreeInodes = &usageStats.InodesFree
+		data.UsedInodes = &usageStats.InodesUsed
+		data.InodesUsagePercent = RoundFloatPtr(usageStats.InodesUsedPercent/100, 4)
+	}
+
+	if ioStats != nil {
+		data.ReadBytes = &ioStats.ReadBytes
+		data.WriteBytes = &ioStats.WriteBytes
+		data.ReadTime = &ioStats.ReadTime
+		data.WriteTime = &ioStats.WriteTime
+	}
+
+	if len(errs) == 0 {
+		return data, CustomErr{}
+	}
+
+	return data, mergeDiskErrors(errs)
+}
+
+func mergeDiskErrors(errs []CustomErr) CustomErr {
+	metricSet := map[string]struct{}{}
+	metrics := make([]string, 0, 8)
+	msgs := make([]string, 0, len(errs))
+
+	for _, e := range errs {
+		for _, m := range e.Metric {
+			if _, ok := metricSet[m]; ok {
+				continue
+			}
+			metricSet[m] = struct{}{}
+			metrics = append(metrics, m)
+		}
+		if strings.TrimSpace(e.Error) != "" {
+			msgs = append(msgs, e.Error)
+		}
+	}
+
+	sort.Strings(metrics)
+	return CustomErr{
+		Metric: metrics,
+		Error:  strings.Join(msgs, "; "),
+	}
 }
 
 // collectIOStats gathers IO-related metrics for a device.
@@ -181,6 +226,13 @@ func buildDeviceKeyCandidates(device string) []string {
 		out = append(out, filepath.Base(resolved))
 	}
 
+	// Resolve device-mapper name via sysfs: /dev/mapper/<name> -> dm-<n>
+	if strings.HasPrefix(d, "/dev/mapper/") {
+		if dm, ok := resolveDMNameFromMapperWithRoot(filepath.Base(d), sysfsRoot); ok {
+			out = append(out, dm)
+		}
+	}
+
 	// Deduplicate
 	seen := map[string]struct{}{}
 	uniq := make([]string, 0, len(out))
@@ -194,6 +246,34 @@ func buildDeviceKeyCandidates(device string) []string {
 		}
 	}
 	return uniq
+}
+
+func resolveDMNameFromMapperWithRoot(mapperName, root string) (string, bool) {
+	if strings.TrimSpace(mapperName) == "" {
+		return "", false
+	}
+
+	pattern := filepath.Join(root, "block", "dm-*", "dm", "name")
+	paths, err := filepath.Glob(pattern)
+	if err != nil || len(paths) == 0 {
+		return "", false
+	}
+
+	for _, p := range paths {
+		b, readErr := os.ReadFile(p)
+		if readErr != nil {
+			continue
+		}
+		name := strings.TrimSpace(string(b))
+		if name != mapperName {
+			continue
+		}
+		// .../block/dm-0/dm/name -> dm-0
+		dmDir := filepath.Dir(filepath.Dir(p))
+		return filepath.Base(dmDir), true
+	}
+
+	return "", false
 }
 
 // collectUsageStats collects usage-related metrics for a mountpoint.
@@ -250,25 +330,25 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 
 	// Iterate through partitions and apply filters
 	for _, partition := range partitions {
-		// Skip duplicates
-		if _, ok := checkedDevices[partition.Device]; ok {
-			continue
-		}
-
 		// Apply filtering logic
 		if !shouldIncludePartition(partition) {
 			continue
 		}
 
+		// Skip duplicates (even on errors) to avoid repeated error spam
+		if _, ok := checkedDevices[partition.Device]; ok {
+			continue
+		}
+		checkedDevices[partition.Device] = struct{}{}
+
 		// Gather metrics for valid partitions
 		diskMetrics, err := collectPartitionMetrics(partition)
 		if err.Error != "" {
 			diskErrors = append(diskErrors, err)
-			continue
 		}
-
-		checkedDevices[partition.Device] = struct{}{} // Mark as checked
-		metricsSlice = append(metricsSlice, diskMetrics)
+		if diskMetrics != nil {
+			metricsSlice = append(metricsSlice, diskMetrics)
+		}
 	}
 
 	if len(diskErrors) == 0 {
