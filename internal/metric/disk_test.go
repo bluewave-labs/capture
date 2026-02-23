@@ -20,7 +20,7 @@ func TestResolveDMNameFromMapperWithRoot(t *testing.T) {
 	if err := os.MkdirAll(p, 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(p, "name"), []byte(name+"\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(p, "name"), []byte(name+"\n"), 0o600); err != nil {
 		t.Fatalf("write name: %v", err)
 	}
 
@@ -49,7 +49,7 @@ func TestBuildDeviceKeyCandidates_AddsDMForMapper(t *testing.T) {
 	if err := os.MkdirAll(p, 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(p, "name"), []byte(name), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(p, "name"), []byte(name), 0o600); err != nil {
 		t.Fatalf("write name: %v", err)
 	}
 
