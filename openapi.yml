@@ -321,6 +321,9 @@ components:
         device:
           type: string
           example: "/dev/sda1"
+        mountpoint:
+          type: string
+          example: "/home"
         total_bytes:
           type: integer
           format: uint64

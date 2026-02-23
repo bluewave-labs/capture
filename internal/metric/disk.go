@@ -113,7 +113,7 @@ func collectPartitionMetrics(partition disk.PartitionStat) (*DiskData, CustomErr
 		return nil, CustomErr{Metric: []string{"disk"}, Error: "no disk stats available"}
 	}
 
-	data := &DiskData{Device: partition.Device}
+	data := &DiskData{Device: partition.Device, Mountpoint: partition.Mountpoint}
 	if usageStats != nil {
 		data.TotalBytes = &usageStats.Total
 		data.UsedBytes = &usageStats.Used
@@ -298,6 +298,7 @@ func CollectDiskMetrics() (MetricsSlice, []CustomErr) {
 	defaultDiskData := []*DiskData{
 		{
 			Device:             "unknown",
+			Mountpoint:         "unknown",
 			TotalBytes:         nil,
 			FreeBytes:          nil,
 			UsedBytes:          nil,

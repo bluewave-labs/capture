@@ -65,6 +65,7 @@ func (m MemoryData) isMetric() {}
 
 type DiskData struct {
 	Device             string   `json:"device"`               // Device
+	Mountpoint         string   `json:"mountpoint"`           // Mountpoint
 	TotalBytes         *uint64  `json:"total_bytes"`          // Total space of device in bytes
 	FreeBytes          *uint64  `json:"free_bytes"`           // Free space of device in bytes
 	UsedBytes          *uint64  `json:"used_bytes"`           // Used space of device in bytes
