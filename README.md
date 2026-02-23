@@ -1,3 +1,5 @@
+<!-- Disable markdownlint rule MD041 (first line in file should be a top-level heading) since we have badges at the top and h1. -->
+<!-- markdownlint-disable MD041 -->
 ![github-license](https://img.shields.io/github/license/bluewave-labs/capture)
 ![github-repo-size](https://img.shields.io/github/repo-size/bluewave-labs/capture)
 ![github-commit-activity](https://img.shields.io/github/commit-activity/w/bluewave-labs/capture)
@@ -20,13 +22,14 @@ Capture is a hardware monitoring agent that collects hardware information from t
 - [Quick Start (Docker)](#quick-start-docker)
 - [Quick Start (Docker Compose)](#quick-start-docker-compose)
 - [Configuration](#configuration)
-- [Endpoints](#endpoints)
-- [API Documentation](#api-documentation)
 - [Installation Options](#installation-options)
   - [Docker (Recommended)](#docker-recommended)
-- [System Installation](#system-installation)
-- [Reverse Proxy and SSL](#reverse-proxy-and-ssl)
-  - [Caddy](#caddy)
+  - [Helm](#helm)
+  - [System Installation](#system-installation)
+  - [Reverse Proxy and SSL](#reverse-proxy-and-ssl)
+    - [Caddy](#caddy)
+- [Endpoints](#endpoints)
+- [API Documentation](#api-documentation)
 - [Contributing](#contributing)
 - [Star History](#star-history)
 - [License](#license)
@@ -94,48 +97,6 @@ API_SECRET=your-secret-key ./capture
 API_SECRET=your-secret-key PORT=59232 GIN_MODE=release ./capture
 ```
 
-## Endpoints
-
-- **Base URL**: `http://<host>:<PORT>` (default port `59232`)
-- **Authentication**: Every `/api/v1/**` route requires `Authorization: Bearer $API_SECRET`. `/health` stays public so you can use it for liveness checks.
-
-| Method | Path                     | Auth | Description                                                                                         | Notes                                          |
-| ------ | ------------------------ | ---- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `GET`  | `/health`                | ❌    | Liveness probe that returns `"OK"`.                                                                 | Useful for container orchestrators.            |
-| `GET`  | `/api/v1/metrics`        | ✅    | Returns the complete capture payload with CPU, memory, disk, host, SMART, network, and Docker data. | Aggregates every collector.                    |
-| `GET`  | `/api/v1/metrics/cpu`    | ✅    | CPU temps, load, and utilization.                                                                   |                                                |
-| `GET`  | `/api/v1/metrics/memory` | ✅    | Memory totals and usage metrics.                                                                    |                                                |
-| `GET`  | `/api/v1/metrics/disk`   | ✅    | Disk capacity, inode usage, and IO stats.                                                           |                                                |
-| `GET`  | `/api/v1/metrics/host`   | ✅    | Host metadata (OS, uptime, kernel, etc.).                                                           |                                                |
-| `GET`  | `/api/v1/metrics/smart`  | ✅    | S.M.A.R.T. drive health information.                                                                |                                                |
-| `GET`  | `/api/v1/metrics/net`    | ✅    | Interface-level network throughput.                                                                 |                                                |
-| `GET`  | `/api/v1/metrics/docker` | ✅    | Docker container metrics.                                                                           | Use `?all=true` to include stopped containers. |
-
-All responses share the same envelope:
-
-```jsonc
-{
-  "data": {
-    // collector-specific payload
-  },
-  "capture": {
-    "version": "1.0.0",
-    "mode": "release"
-  },
-  "errors": [
-    // optional array of error messages if any collectors failed, can be null
-  ],
-}
-```
-
-Collectors can partially fail; when that happens the API responds with HTTP `207 Multi-Status` and fills `errors` with detailed reasons so you can alert without dropping other metric data.
-
-## API Documentation
-
-Our API is documented in accordance with the OpenAPI spec.
-
-You can find the OpenAPI specifications [in openapi.yml](https://github.com/bluewave-labs/capture/blob/develop/openapi.yml)
-
 ## Installation Options
 
 ### Docker (Recommended)
@@ -164,7 +125,27 @@ Docker options explained:
 - `-e API_SECRET`: Required authentication key
 - `-d`: Detached mode
 
-## System Installation
+### Helm
+
+You can deploy Capture on a Kubernetes cluster using the provided Helm chart.
+
+1. Go to the Helm chart directory:
+
+    ```shell
+    cd deployment/helm/capture
+    ```
+
+2. Customize `values.yaml` and set your `API_SECRET`.
+
+3. Install the chart:
+
+    ```shell
+    helm install capture .
+    ```
+
+For detailed instructions, refer to the [Helm Installation Guide](./deployment/helm/capture/INSTALLATION.md).
+
+### System Installation
 
 Choose one of these methods:
 
@@ -184,11 +165,11 @@ Choose one of these methods:
    just build   # or: go build -o dist/capture ./cmd/capture/
    ```
 
-## Reverse Proxy and SSL
+### Reverse Proxy and SSL
 
 You can use a reverse proxy in front of the Capture service to handle HTTPS requests and SSL termination.
 
-### Caddy
+#### Caddy
 
 ```lua
 ├deployment/reverse-proxy-compose/
@@ -214,6 +195,48 @@ Start the Caddy reverse proxy
 docker compose -f caddy.compose.yml up -d
 ```
 
+## Endpoints
+
+- **Base URL**: `http://<host>:<PORT>` (default port `59232`)
+- **Authentication**: Every `/api/v1/**` route requires `Authorization: Bearer $API_SECRET`. `/health` stays public so you can use it for liveness checks.
+
+| Method | Path                     | Auth | Description                                                                                         | Notes                                          |
+| ------ | ------------------------ | ---- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `GET`  | `/health`                | ❌   | Liveness probe that returns `"OK"`.                                                                 | Useful for container orchestrators.            |
+| `GET`  | `/api/v1/metrics`        | ✅   | Returns the complete capture payload with CPU, memory, disk, host, SMART, network, and Docker data. | Aggregates every collector.                    |
+| `GET`  | `/api/v1/metrics/cpu`    | ✅   | CPU temps, load, and utilization.                                                                   |                                                |
+| `GET`  | `/api/v1/metrics/memory` | ✅   | Memory totals and usage metrics.                                                                    |                                                |
+| `GET`  | `/api/v1/metrics/disk`   | ✅   | Disk capacity, inode usage, and IO stats.                                                           |                                                |
+| `GET`  | `/api/v1/metrics/host`   | ✅   | Host metadata (OS, uptime, kernel, etc.).                                                           |                                                |
+| `GET`  | `/api/v1/metrics/smart`  | ✅   | S.M.A.R.T. drive health information.                                                                |                                                |
+| `GET`  | `/api/v1/metrics/net`    | ✅   | Interface-level network throughput.                                                                 |                                                |
+| `GET`  | `/api/v1/metrics/docker` | ✅   | Docker container metrics.                                                                           | Use `?all=true` to include stopped containers. |
+
+All responses share the same envelope:
+
+```jsonc
+{
+  "data": {
+    // collector-specific payload
+  },
+  "capture": {
+    "version": "1.0.0",
+    "mode": "release"
+  },
+  "errors": [
+    // optional array of error messages if any collectors failed, can be null
+  ],
+}
+```
+
+Collectors can partially fail; when that happens the API responds with HTTP `207 Multi-Status` and fills `errors` with detailed reasons so you can alert without dropping other metric data.
+
+## API Documentation
+
+Our API is documented in accordance with the OpenAPI spec.
+
+You can find the OpenAPI specifications [in openapi.yml](https://github.com/bluewave-labs/capture/blob/develop/openapi.yml)
+
 ## Contributing
 
 We welcome contributions! If you would like to contribute, please read the [CONTRIBUTING.md](./CONTRIBUTING.md) file for more information.
@@ -228,4 +251,4 @@ We welcome contributions! If you would like to contribute, please read the [CONT
 
 ## License
 
-Capture is licensed under AGPLv3. You can find the license [here](./LICENSE)
+Capture is licensed under AGPLv3. You can find the license in the [LICENSE](./LICENSE) file.
