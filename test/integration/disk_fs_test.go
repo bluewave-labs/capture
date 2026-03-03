@@ -65,6 +65,7 @@ func TestDiskFilesystemMetrics(t *testing.T) {
 
 	// Filesystem-specific sizes to accommodate minimum requirements.
 	// XFS requires 300MB minimum, BTRFS requires ~114MB minimum.
+	// ZFS requires larger pools due to significant metadata overhead (~60% on small pools).
 	fsMinSizes := map[string]struct {
 		lvmBackingMB    int
 		directBackingMB int
@@ -73,7 +74,7 @@ func TestDiskFilesystemMetrics(t *testing.T) {
 		"ext4":  {lvmBackingMB: 200, directBackingMB: 100, lvSizeMB: 100},
 		"xfs":   {lvmBackingMB: 600, directBackingMB: 300, lvSizeMB: 300},
 		"btrfs": {lvmBackingMB: 300, directBackingMB: 150, lvSizeMB: 150},
-		"zfs":   {lvmBackingMB: 200, directBackingMB: 100, lvSizeMB: 100},
+		"zfs":   {lvmBackingMB: 400, directBackingMB: 200, lvSizeMB: 200},
 	}
 
 	testCases := []struct {

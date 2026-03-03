@@ -13,17 +13,18 @@ import (
 // and provides methods to set up storage, format/mount, write test data, and
 // tear everything down.
 type DiskEnv struct {
-	t           *testing.T
-	fs          string // "ext4", "xfs", "btrfs", or "zfs"
-	strategy    string // "lvm" or "direct"
-	backingFile string // backing image file for the loop device
-	loopDev     string // /dev/loopN
-	vgName      string // LVM volume group name (lvm strategy only)
-	lvName      string // LVM logical volume name (lvm strategy only)
-	lvPath      string // /dev/<vgName>/<lvName> (lvm strategy only)
-	zpoolName   string // ZFS pool name (zfs only)
-	mountPoint  string // directory where the filesystem is mounted
-	devicePath  string // device passed to mkfs or zpool create
+	t             *testing.T
+	fs            string // "ext4", "xfs", "btrfs", or "zfs"
+	strategy      string // "lvm" or "direct"
+	backingFile   string // backing image file for the loop device
+	loopDev       string // /dev/loopN
+	vgName        string // LVM volume group name (lvm strategy only)
+	lvName        string // LVM logical volume name (lvm strategy only)
+	lvPath        string // /dev/<vgName>/<lvName> (lvm strategy only)
+	zpoolName     string // ZFS pool name (zfs only)
+	mountPoint    string // directory where the filesystem is mounted
+	devicePath    string // device passed to mkfs or zpool create
+	provisionedMB int    // size of the provisioned device (for ZFS quota)
 }
 
 // SetupLoopDevice creates a backing image file of sizeMB and attaches it as a loop device.
@@ -35,6 +36,7 @@ func (e *DiskEnv) SetupLoopDevice(sizeMB int) {
 	test.ShellRun(e.t, "truncate", "-s", fmt.Sprintf("%dM", sizeMB), e.backingFile)
 
 	e.loopDev = test.ShellRun(e.t, "losetup", "--find", "--show", e.backingFile)
+	e.provisionedMB = sizeMB
 	e.t.Logf("Loop device: %s (%dMB)", e.loopDev, sizeMB)
 }
 
@@ -53,6 +55,7 @@ func (e *DiskEnv) SetupLVM(lvSizeMB int) {
 
 	e.lvPath = fmt.Sprintf("/dev/%s/%s", e.vgName, e.lvName)
 	e.devicePath = e.lvPath
+	e.provisionedMB = lvSizeMB
 	e.t.Logf("LVM device: %s", e.lvPath)
 }
 
@@ -75,6 +78,9 @@ func (e *DiskEnv) FormatAndMount() {
 	case "zfs":
 		e.zpoolName = fmt.Sprintf("captpool%s%d", e.fs, os.Getpid())
 		test.ShellRun(e.t, "zpool", "create", "-f", "-m", e.mountPoint, e.zpoolName, e.devicePath)
+		// Disable compression and deduplication to ensure test data writes count toward usage.
+		test.ShellRun(e.t, "zfs", "set", "compression=off", e.zpoolName)
+		test.ShellRun(e.t, "zfs", "set", "dedup=off", e.zpoolName)
 	}
 
 	e.t.Logf("Mounted %s on %s at %s", e.fs, e.devicePath, e.mountPoint)
@@ -92,6 +98,13 @@ func (e *DiskEnv) WriteTestData(sizeMB int) {
 		fmt.Sprintf("count=%d", sizeMB),
 		"conv=fdatasync",
 	)
+
+	// ZFS uses copy-on-write with transaction groups (TXGs). Force a sync to ensure
+	// written data is committed and reflected in space accounting before metrics collection.
+	if e.fs == "zfs" && e.zpoolName != "" {
+		test.ShellRun(e.t, "zpool", "sync", e.zpoolName)
+		e.t.Logf("ZFS pool synced: %s", e.zpoolName)
+	}
 }
 
 // Cleanup releases all provisioned resources in reverse order. It is safe to
