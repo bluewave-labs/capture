@@ -1,0 +1,62 @@
+name: disk-fs-integration
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+        # Only run this workflow when files related to the disk filesystem integration tests are changed
+      - .github/workflows/disk-fs-integration.yml
+      - internal/metric/disk.go
+      - test/integration/disk_fs_test.go
+      - test/integration/disk_env.go
+      - test/helpers.go
+      - go.mod
+      - go.sum
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  disk-fs-test:
+    name: Disk FS integration (root)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install filesystem tools
+        run: |
+          sudo apt-get update
+          sudo apt install -y \
+            e2fsprogs \
+            xfsprogs \
+            btrfs-progs \
+            zfsutils-linux \
+            lvm2
+
+      - name: Prepare kernel modules and loop devices
+        run: |
+          sudo modprobe loop || true
+
+      - name: Run disk filesystem integration test as root
+        run: |
+          GO_BIN="$(command -v go)"
+          echo "Using Go binary: ${GO_BIN}"
+          sudo "${GO_BIN}" test -v -count=1 -run TestDiskFilesystemMetrics ./test/integration/
