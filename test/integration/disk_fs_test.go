@@ -103,6 +103,7 @@ func TestDiskFilesystemMetrics(t *testing.T) {
 				test.RequireCmd(t, "mkfs.btrfs")
 			case "zfs":
 				test.RequireCmd(t, "zpool")
+				test.RequireCmd(t, "zfs")
 			}
 
 			if tc.strategy == "lvm" {
