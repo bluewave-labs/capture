@@ -33,6 +33,10 @@ linters:
       - third_party$
       - builtin$
       - examples$
+  settings:
+    gosec:
+      excludes:
+        - G117 # to exclude 'Exported struct field "APISecret" (JSON key "APISecret") matches secret pattern'
 
 formatters:
   enable:
