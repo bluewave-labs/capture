@@ -28,7 +28,7 @@ test:
 lint:
 	go vet ./...
 	go run honnef.co/go/tools/cmd/staticcheck@latest -checks=all,-ST1000,-U1000 ./...
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run
 
 build:
     @go build -o dist/capture ./cmd/capture/
