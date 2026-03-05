@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -24,11 +25,11 @@ type Server struct {
 // It uses a goroutine to handle the server's ListenAndServe method, allowing the main thread to continue executing.
 func (s *Server) Serve() {
 	go func() {
-		if err := s.Server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := s.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("server error: %v", err)
 		}
 	}()
-	log.Printf("server started on %s", s.Server.Addr)
+	log.Printf("server started on %s", s.Addr)
 }
 
 // GracefulShutdown gracefully shuts down the server with a timeout.
@@ -43,7 +44,7 @@ func (s *Server) GracefulShutdown(timeout time.Duration) {
 	defer cancel()
 
 	log.Println("shutting down server...")
-	if err := s.Server.Shutdown(ctx); err != nil {
+	if err := s.Shutdown(ctx); err != nil {
 		log.Printf("server shutdown error: %v", err)
 	} else {
 		log.Println("server shutdown gracefully")
