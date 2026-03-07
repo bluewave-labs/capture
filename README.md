@@ -26,6 +26,8 @@ Capture is a hardware monitoring agent that collects hardware information from t
   - [Docker (Recommended)](#docker-recommended)
   - [Helm](#helm)
   - [System Installation](#system-installation)
+  - [Linux Systemd Service](#linux-systemd-service)
+  - [Windows Service](#windows-service)
   - [Reverse Proxy and SSL](#reverse-proxy-and-ssl)
     - [Caddy](#caddy)
 - [Endpoints](#endpoints)
@@ -164,6 +166,114 @@ Choose one of these methods:
    cd capture
    just build   # or: go build -o dist/capture ./cmd/capture/
    ```
+
+### Linux Systemd Service
+
+An install script is provided at [`deployment/linux/install.sh`](./deployment/linux/install.sh). It automatically detects your CPU architecture, downloads the latest release from GitHub, installs the binary to `/usr/local/bin`, and registers a systemd service.
+
+**Requirements:** `curl`, `tar`, and a system running systemd. Must be run as root.
+
+1. Run the script:
+
+    ```shell
+    sudo bash deployment/linux/install.sh
+    ```
+
+    The script will prompt you for `API_SECRET` if it is not supplied as an argument.
+
+2. Supply options inline if preferred:
+
+    ```shell
+    sudo bash deployment/linux/install.sh --api-secret "your-secret-key"
+    ```
+
+3. Full option reference:
+
+    | Option           | Description                              | Default              |
+    | ---------------- | ---------------------------------------- | -------------------- |
+    | `--api-secret`   | Authentication key (required)            | *(prompted)*         |
+    | `--port`         | Port the agent listens on                | `59232`              |
+    | `--install-dir`  | Directory to install the binary          | `/usr/local/bin`     |
+    | `--service-name` | systemd service name                     | `capture`            |
+
+4. After installation, manage the service with `systemctl`:
+
+    ```shell
+    systemctl status capture
+    systemctl stop capture
+    systemctl start capture
+    systemctl restart capture
+    journalctl -u capture -f
+    ```
+
+#### Manual setup
+
+If you prefer to configure the service manually, a template service file is provided at [`deployment/systemd/capture.service`](./deployment/systemd/capture.service).
+
+1. Edit the service file with your binary path, user, group, and secret key:
+
+    ```shell
+    nano deployment/systemd/capture.service
+    ```
+
+2. Copy it to the systemd unit directory:
+
+    ```shell
+    cp deployment/systemd/capture.service /etc/systemd/system/
+    ```
+
+3. Reload, enable, and start the service:
+
+    ```shell
+    systemctl daemon-reload
+    systemctl enable capture
+    systemctl start capture
+    ```
+
+4. Verify the service is running:
+
+    ```shell
+    systemctl status capture
+    ```
+
+### Windows Service
+
+A PowerShell install script is provided at [`deployment/windows/install.ps1`](./deployment/windows/install.ps1). It automatically detects your CPU architecture, downloads the latest release from GitHub, installs the binary, and registers a Windows service.
+
+**Requirements:** PowerShell 5.1+ and an Administrator terminal.
+
+1. Open PowerShell **as Administrator** and run:
+
+    ```powershell
+    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+    .\deployment\windows\install.ps1
+    ```
+
+    The script will prompt you for `API_SECRET` if it is not supplied as a parameter.
+
+2. Supply options inline if preferred:
+
+    ```powershell
+    .\deployment\windows\install.ps1 -APISecret "your-secret-key"
+    ```
+
+3. Full parameter reference:
+
+    | Parameter      | Description                              | Default                      |
+    | -------------- | ---------------------------------------- | ---------------------------- |
+    | `-APISecret`   | Authentication key (required)            | *(prompted)*                 |
+    | `-Port`        | Port the agent listens on                | `59232`                      |
+    | `-InstallDir`  | Directory to install the binary          | `C:\Program Files\Capture`   |
+    | `-ServiceName` | Windows service name                     | `capture`                    |
+
+4. After installation, manage the service with standard PowerShell cmdlets:
+
+    ```powershell
+    Get-Service capture
+    Stop-Service capture
+    Start-Service capture
+    Restart-Service capture
+    ```
 
 ### Reverse Proxy and SSL
 
