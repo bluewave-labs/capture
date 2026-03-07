@@ -84,8 +84,8 @@ $targetBinary = Join-Path $InstallDir 'capture.exe'
 $existingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 if ($existingService) {
     Write-Host "Stopping existing service '$ServiceName'..."
-    Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 2
+    Stop-Service -Name $ServiceName -Force
+    $existingService.WaitForStatus('Stopped', [TimeSpan]::FromSeconds(30))
 }
 
 Copy-Item -Path $binaryPath -Destination $targetBinary -Force
@@ -125,8 +125,8 @@ Set-ItemProperty `
     -Value @("API_SECRET=$APISecret", "PORT=$Port", "GIN_MODE=release") `
     -Type  MultiString
 
-# Start the service
-Start-Service -Name $ServiceName
+# Start or restart the service (Restart-Service starts it if stopped, restarts if running)
+Restart-Service -Name $ServiceName -Force
 Write-Host "Service status: $((Get-Service -Name $ServiceName).Status)"
 
 Write-Host ""

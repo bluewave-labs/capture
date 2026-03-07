@@ -141,11 +141,8 @@ step "Installing to $INSTALL_DIR"
 
 mkdir -p "$INSTALL_DIR"
 
-# Stop the existing service before replacing the binary
-if systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null; then
-    warn "Running service '$SERVICE_NAME' found – stopping it before upgrade."
-    systemctl stop "$SERVICE_NAME"
-fi
+# Stop the service before replacing the binary (no-op if not yet installed)
+systemctl stop "$SERVICE_NAME" 2>/dev/null || true
 
 INSTALL_PATH="$INSTALL_DIR/capture"
 install -m 0755 "$BINARY_PATH" "$INSTALL_PATH"
@@ -210,7 +207,7 @@ step "Enabling and starting service '$SERVICE_NAME'"
 
 systemctl daemon-reload
 systemctl enable "$SERVICE_NAME"
-systemctl start  "$SERVICE_NAME"
+systemctl restart "$SERVICE_NAME"
 
 if systemctl is-active --quiet "$SERVICE_NAME"; then
     success "Service is running."
