@@ -8,7 +8,6 @@
 ![github-issues-and-prs](https://img.shields.io/github/issues-pr/bluewave-labs/capture)
 ![github-issues](https://img.shields.io/github/issues/bluewave-labs/capture)
 [![go-reference](https://pkg.go.dev/badge/github.com/bluewave-labs/capture.svg)](https://pkg.go.dev/github.com/bluewave-labs/capture)
-[![github-actions-check](https://github.com/bluewave-labs/capture/actions/workflows/check.yml/badge.svg)](https://github.com/bluewave-labs/capture/actions/workflows/check.yml)
 [![github-actions-go](https://github.com/bluewave-labs/capture/actions/workflows/go.yml/badge.svg)](https://github.com/bluewave-labs/capture/actions/workflows/go.yml)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/bluewave-labs/capture)
 
