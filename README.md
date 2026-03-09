@@ -172,10 +172,10 @@ An install script is provided at [`deployment/linux/install.sh`](./deployment/li
 
 **Requirements:** `curl`, `tar`, and a system running systemd. Must be run as root.
 
-1. Run the script:
+1. Download and run in one step:
 
     ```shell
-    sudo bash deployment/linux/install.sh
+    curl -fsSL https://raw.githubusercontent.com/bluewave-labs/capture/main/deployment/linux/install.sh | sudo bash
     ```
 
     The script will prompt you for `API_SECRET` if it is not supplied as an argument.
@@ -183,10 +183,29 @@ An install script is provided at [`deployment/linux/install.sh`](./deployment/li
 2. Supply options inline if preferred:
 
     ```shell
-    sudo bash deployment/linux/install.sh --api-secret "your-secret-key"
+    curl -fsSL https://raw.githubusercontent.com/bluewave-labs/capture/main/deployment/linux/install.sh \
+        | sudo bash -s -- --api-secret "your-secret-key"
     ```
 
-3. Full option reference:
+3. All available options:
+
+    ```shell
+    curl -fsSL https://raw.githubusercontent.com/bluewave-labs/capture/main/deployment/linux/install.sh \
+        | sudo bash -s -- \
+            --api-secret "your-secret-key" \
+            --port 59232 \
+            --install-dir /usr/local/bin \
+            --service-name capture
+    ```
+
+    Or download the script first and run it locally:
+
+    ```shell
+    curl -fsSL -o install.sh https://raw.githubusercontent.com/bluewave-labs/capture/main/deployment/linux/install.sh
+    sudo bash install.sh --api-secret "your-secret-key"
+    ```
+
+4. Full option reference:
 
     | Option           | Description                              | Default              |
     | ---------------- | ---------------------------------------- | -------------------- |
@@ -195,7 +214,7 @@ An install script is provided at [`deployment/linux/install.sh`](./deployment/li
     | `--install-dir`  | Directory to install the binary          | `/usr/local/bin`     |
     | `--service-name` | systemd service name                     | `capture`            |
 
-4. After installation, manage the service with `systemctl`:
+5. After installation, manage the service with `systemctl`:
 
     ```shell
     systemctl status capture
@@ -241,22 +260,40 @@ A PowerShell install script is provided at [`deployment/windows/install.ps1`](./
 
 **Requirements:** PowerShell 5.1+ and an Administrator terminal.
 
-1. Open PowerShell **as Administrator** and run:
+1. Open PowerShell **as Administrator** and run in one step:
 
     ```powershell
     Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-    .\deployment\windows\install.ps1
+    Invoke-RestMethod https://raw.githubusercontent.com/bluewave-labs/capture/main/deployment/windows/install.ps1 | Invoke-Expression
     ```
 
     The script will prompt you for `API_SECRET` if it is not supplied as a parameter.
 
-2. Supply options inline if preferred:
+2. Supply parameters inline if preferred:
 
     ```powershell
-    .\deployment\windows\install.ps1 -APISecret "your-secret-key"
+    & ([scriptblock]::Create(
+        (Invoke-RestMethod https://raw.githubusercontent.com/bluewave-labs/capture/main/deployment/windows/install.ps1)
+    )) -APISecret "your-secret-key"
     ```
 
-3. Full parameter reference:
+3. All available parameters:
+
+    ```powershell
+    & ([scriptblock]::Create(
+        (Invoke-RestMethod https://raw.githubusercontent.com/bluewave-labs/capture/main/deployment/windows/install.ps1)
+    )) -APISecret "your-secret-key" -Port 59232 -InstallDir "C:\Program Files\Capture" -ServiceName "capture"
+    ```
+
+    Or download the script first and run it locally:
+
+    ```powershell
+    Invoke-RestMethod https://raw.githubusercontent.com/bluewave-labs/capture/main/deployment/windows/install.ps1 -OutFile install.ps1
+    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+    .\install.ps1 -APISecret "your-secret-key"
+    ```
+
+4. Full parameter reference:
 
     | Parameter      | Description                              | Default                      |
     | -------------- | ---------------------------------------- | ---------------------------- |
@@ -265,7 +302,7 @@ A PowerShell install script is provided at [`deployment/windows/install.ps1`](./
     | `-InstallDir`  | Directory to install the binary          | `C:\Program Files\Capture`   |
     | `-ServiceName` | Windows service name                     | `capture`                    |
 
-4. After installation, manage the service with standard PowerShell cmdlets:
+5. After installation, manage the service with standard PowerShell cmdlets:
 
     ```powershell
     Get-Service capture
