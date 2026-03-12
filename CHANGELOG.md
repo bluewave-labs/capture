@@ -4,6 +4,34 @@
 
 Date-Format: YYYY-MM-DD
 
+## 1.4.0 (2026-03-13)
+
+This release improves the data you get from Capture and makes it more reliable. Disk metrics now include `mountpoint`, LVM disks are detected more accurately, and ZFS I/O reporting is improved. Docker metrics now include runtime stats such as CPU, memory, network, block I/O, and PIDs, and the API/OpenAPI docs are updated to match these responses. Test coverage and dependency updates were also improved to reduce regressions.
+
+- [650596c](https://github.com/bluewave-labs/capture/commit/650596cd56e81620c2005e2fc18e9c56ca28fbe1) feat(metrics): enhance ZFS IO statistics collection and update test cases for ZFS metrics
+- [8cf759c](https://github.com/bluewave-labs/capture/commit/8cf759c83e402abcd56738297f7b409ed31b2a95) docs: update installation instructions for Linux and Windows with one-step download method
+- [cbc4fe8](https://github.com/bluewave-labs/capture/commit/cbc4fe800290efa368e0a1d5f9af4d970cbeab14) feat(agents): add Go development instructions and best practices for GitHub Copilot
+- [e665581](https://github.com/bluewave-labs/capture/commit/e665581df98c6cab0d81dbaeee25548ded439007) fix: streamline service management in installation scripts for Linux and Windows
+- [5da2c3a](https://github.com/bluewave-labs/capture/commit/5da2c3aea22006163abc703e29b4e000af9f9023) fix: remove outdated 'check' GitHub Actions badge
+- [6681650](https://github.com/bluewave-labs/capture/commit/6681650870e3576ee1b152c130884e0c2b11deff) feat: add installation scripts for Linux and Windows services, update README with service instructions (#149)
+- [134e22f](https://github.com/bluewave-labs/capture/commit/134e22f97fede5f1ee81fd0d6a60ae1a2561d12b) feat(ci): Workflow Update for Checks (#148)
+- [f4c40cb](https://github.com/bluewave-labs/capture/commit/f4c40cb7290ca95281158364617b42232bb5d039) test(disks): add disk filesystem metrics tests and helper functions (#147)
+- [02406d0](https://github.com/bluewave-labs/capture/commit/02406d0eadf5d3774072b0fc8c21b838c319fedb) docs: update README to include Helm installation instructions and reorder sections
+- [e2583a4](https://github.com/bluewave-labs/capture/commit/e2583a48071a9a34f0e88d8d658cd99b8aae7e79) fix(test): migrate disk metrics test to internal package and remove integration test
+- [10b4a8f](https://github.com/bluewave-labs/capture/commit/10b4a8fb6cd022f8efd2b04db043dc7d6cd2492b) Feat/add mountpoint field disk data (#140)
+- [1021e7b](https://github.com/bluewave-labs/capture/commit/1021e7b3e31bd5cf7646dcc9c02f406c3245dae7) fix: include internal tests in unit-test command
+- [c790cf1](https://github.com/bluewave-labs/capture/commit/c790cf14f54700f2ce6555124d478e4a34a7e6e5) fix: update file permissions to 600 for disk_test
+- [beedb06](https://github.com/bluewave-labs/capture/commit/beedb0655135826139be7e45cc7255a1d31bfdec) build(deps): bump golang.org/x/crypto from 0.38.0 to 0.45.0 (#141)
+- [9da66ff](https://github.com/bluewave-labs/capture/commit/9da66ff416f5489f2a6eeb56339ab32a1e35237d) fix: issue #131, disk metric not shown when using LVM (#143)
+- [cab166b](https://github.com/bluewave-labs/capture/commit/cab166b1c915ef6f3d09b62623bfaecbc0a804fe) fix: replace API_SECRET with hardcoded value in contract workflow (#146)
+- [7600a48](https://github.com/bluewave-labs/capture/commit/7600a4864b37dd2cbe7483835856de626276ed45) Added Helm Chart for deployment of Capture (#145)
+- [bb8b06b](https://github.com/bluewave-labs/capture/commit/bb8b06b01c217403a88c00504a014b52ad248a3b) feat(docker): add Docker container metrics collection and OpenAPI documentation (#142)
+- [abce462](https://github.com/bluewave-labs/capture/commit/abce462dc9c023189c4fbc6681d2ae75bbcbd4cc) docs: update README to include API endpoints (#137)
+
+[Full Changelog](https://github.com/bluewave-labs/capture/compare/v1.3.2...v1.4.0)
+
+Contributors: @mertssmnoglu, @Antoplt, @adosaiguas, @sharmajidotdev
+
 ## 1.3.2 (2026-10-09)
 
 Upgraded Go to **v1.24.7**, refactored disk metrics collection to improve accuracy and fix disk filtering issues, and cleaned up `goreleaser` configuration by removing redundant SBOM settings.
