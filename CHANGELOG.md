@@ -4,6 +4,18 @@
 
 Date-Format: YYYY-MM-DD
 
+## 1.3.2 (2026-10-09)
+
+Upgraded Go to **v1.24.7**, refactored disk metrics collection to improve accuracy and fix disk filtering issues, and cleaned up `goreleaser` configuration by removing redundant SBOM settings.
+
+- [d2134de](https://github.com/bluewave-labs/capture/commit/d2134de8eab8c7b1a1bb900ebb47f0d7ead4cbdc) feat: upgrade go version to 1.24.7 (#130) by @mrtechit
+- [f194501](https://github.com/bluewave-labs/capture/commit/f1945010a3110f81a8202383ebe24525565f3327) Refactor disk metrics collection and improve comments (#132) @VeNoMZiTo
+- [844f725](https://github.com/bluewave-labs/capture/commit/844f725742d09f5abfb5ec73e93c69a976e522b7) fix(goreleaser): remove extra sbom configuration from capture build (#129)
+
+[Full Changelog](https://github.com/bluewave-labs/capture/compare/v1.3.1...v1.3.2)
+
+Contributors: @mrtechit, @VeNoMZiTo
+
 ## 1.3.1 (2025-09-21)
 
 This is a patch release that addresses a bug in the CPU temperature validation logic on some Linux systems and adding more build metadata to `capture --version` output.
