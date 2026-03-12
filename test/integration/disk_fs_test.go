@@ -74,7 +74,7 @@ func TestDiskFilesystemMetrics(t *testing.T) {
 		"ext4":  {lvmBackingMB: 200, directBackingMB: 100, lvSizeMB: 100},
 		"xfs":   {lvmBackingMB: 600, directBackingMB: 300, lvSizeMB: 300},
 		"btrfs": {lvmBackingMB: 300, directBackingMB: 150, lvSizeMB: 150},
-		"zfs":   {lvmBackingMB: 400, directBackingMB: 200, lvSizeMB: 200},
+		"zfs":   {lvmBackingMB: 1200, directBackingMB: 1024, lvSizeMB: 1024},
 	}
 
 	testCases := []struct {

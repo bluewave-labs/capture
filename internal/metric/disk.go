@@ -1,10 +1,13 @@
 package metric
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/shirou/gopsutil/v4/disk"
@@ -94,8 +97,17 @@ func shouldIncludePartition(partition disk.PartitionStat) bool {
 func collectPartitionMetrics(partition disk.PartitionStat) (*DiskData, CustomErr) {
 	var errs []CustomErr
 
-	// Collect IO statistics (optional)
-	ioStats, ioErr := collectIOStats(partition.Device)
+	// Collect IO statistics (optional).
+	// ZFS pools are identified by pool name rather than a /dev/ block device path,
+	// so they require a dedicated collector that reads from the ZFS kstat interface
+	// or falls back to the zpool command.
+	var ioStats *disk.IOCountersStat
+	var ioErr *CustomErr
+	if isZFSFilesystem(partition) {
+		ioStats, ioErr = collectZFSIOStats(partition.Device)
+	} else {
+		ioStats, ioErr = collectIOStats(partition.Device)
+	}
 	if ioErr != nil {
 		errs = append(errs, *ioErr)
 	}
@@ -246,6 +258,125 @@ func buildDeviceKeyCandidates(device string) []string {
 		}
 	}
 	return uniq
+}
+
+// collectZFSIOStats gathers IO-related metrics for a ZFS pool.
+//
+// ZFS pools expose cumulative I/O counters through the Linux kernel statistics
+// interface at /proc/spl/kstat/zfs/<pool>/io. When that interface is unavailable
+// (non-Linux or kernel module not loaded) the function falls back to parsing the
+// output of `zpool iostat`. If neither source is reachable it returns nil without
+// an error – the absence of ZFS I/O counters is not a failure condition, since
+// ZFS does not register itself as a standard block device in /proc/diskstats.
+func collectZFSIOStats(poolName string) (*disk.IOCountersStat, *CustomErr) {
+	// Preferred path: Linux OpenZFS kstat interface (cumulative counters).
+	if runtime.GOOS == "linux" {
+		if stat, err := readZFSKStat(poolName); err == nil && stat != nil {
+			return stat, nil
+		}
+	}
+
+	// Fallback: zpool iostat command.
+	if stat, err := zpoolIOStat(poolName); err == nil && stat != nil {
+		return stat, nil
+	}
+
+	// ZFS IO stats are unavailable – return nil without an error.
+	return nil, nil
+}
+
+// readZFSKStat reads cumulative IO counters for poolName from the Linux kernel
+// statistics interface at /proc/spl/kstat/zfs/<poolName>/io.
+func readZFSKStat(poolName string) (*disk.IOCountersStat, error) {
+	path := filepath.Join("/proc/spl/kstat/zfs", poolName, "io")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	stat := &disk.IOCountersStat{Name: poolName}
+	for _, line := range strings.Split(string(data), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) < 3 {
+			continue
+		}
+		val, parseErr := strconv.ParseUint(fields[2], 10, 64)
+		if parseErr != nil {
+			continue
+		}
+		switch fields[0] {
+		case "nread":
+			stat.ReadBytes = val
+		case "nwritten":
+			stat.WriteBytes = val
+		case "rtime":
+			// rtime is in nanoseconds; convert to milliseconds to match gopsutil convention.
+			stat.ReadTime = val / 1_000_000
+		case "wtime":
+			stat.WriteTime = val / 1_000_000
+		case "reads":
+			stat.ReadCount = val
+		case "writes":
+			stat.WriteCount = val
+		}
+	}
+	return stat, nil
+}
+
+// zpoolIOStat collects IO statistics for a ZFS pool by running
+// `zpool iostat -H -p <poolName>`, which reports average throughput since the
+// pool was last imported or statistics were cleared. The function returns nil,
+// nil when the zpool binary is unavailable or the command fails.
+func zpoolIOStat(poolName string) (*disk.IOCountersStat, error) {
+	// -H: scripted/parseable output (tab-separated, no headers).
+	// -p: exact numeric values.
+	out, err := exec.Command("zpool", "iostat", "-H", "-p", poolName).Output()
+	if err != nil {
+		return nil, fmt.Errorf("zpool iostat: %w", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	if len(lines) == 0 {
+		return nil, fmt.Errorf("empty zpool iostat output for pool %s", poolName)
+	}
+
+	// Expected columns: pool  alloc  free  read_iops  write_iops  read_bw  write_bw
+	fields := strings.Fields(lines[len(lines)-1])
+	if len(fields) < 7 {
+		return nil, fmt.Errorf("unexpected zpool iostat output: %q", lines[len(lines)-1])
+	}
+
+	parseField := func(s string) (uint64, error) {
+		if s == "-" {
+			return 0, nil
+		}
+		return strconv.ParseUint(s, 10, 64)
+	}
+
+	readOps, err := parseField(fields[3])
+	if err != nil {
+		return nil, fmt.Errorf("parsing read_iops: %w", err)
+	}
+	writeOps, err := parseField(fields[4])
+	if err != nil {
+		return nil, fmt.Errorf("parsing write_iops: %w", err)
+	}
+	readBW, err := parseField(fields[5])
+	if err != nil {
+		return nil, fmt.Errorf("parsing read_bw: %w", err)
+	}
+	writeBW, err := parseField(fields[6])
+	if err != nil {
+		return nil, fmt.Errorf("parsing write_bw: %w", err)
+	}
+
+	return &disk.IOCountersStat{
+		Name:       poolName,
+		ReadBytes:  readBW,
+		WriteBytes: writeBW,
+		ReadCount:  readOps,
+		WriteCount: writeOps,
+	}, nil
 }
 
 func resolveDMNameFromMapperWithRoot(mapperName, root string) (string, bool) {
