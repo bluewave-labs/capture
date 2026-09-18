@@ -3,6 +3,7 @@ package metric
 import (
 	"context"
 	"encoding/json"
+	"sync"
 	"time"
 
 	"github.com/docker/docker/api/types/container"
@@ -79,14 +80,26 @@ func GetDockerMetrics(all bool) (MetricsSlice, []CustomErr) {
 		})
 	}
 
-	for _, container := range containers {
-		metric, customErr := processContainer(ctx, cli, container)
-		if customErr.Error != "" {
-			containerErrors = append(containerErrors, customErr)
-			continue
-		}
-		metrics = append(metrics, metric)
+	var resultMutex sync.Mutex
+	var waitGroup sync.WaitGroup
+	for _, currentContainer := range containers {
+		waitGroup.Add(1)
+		go func(current container.Summary) {
+			defer waitGroup.Done()
+
+			metric, customErr := processContainer(ctx, cli, current)
+
+			resultMutex.Lock()
+			defer resultMutex.Unlock()
+
+			if customErr.Error != "" {
+				containerErrors = append(containerErrors, customErr)
+				return
+			}
+			metrics = append(metrics, metric)
+		}(currentContainer)
 	}
+	waitGroup.Wait()
 
 	if len(containerErrors) > 0 {
 		return metrics, containerErrors
