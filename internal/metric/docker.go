@@ -3,6 +3,7 @@ package metric
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -80,26 +81,32 @@ func GetDockerMetrics(all bool) (MetricsSlice, []CustomErr) {
 		})
 	}
 
-	var resultMutex sync.Mutex
+	results := make([]ContainerMetrics, len(containers))
+	perContainerErrors := make([]CustomErr, len(containers))
 	var waitGroup sync.WaitGroup
-	for _, currentContainer := range containers {
+	for i, currentContainer := range containers {
 		waitGroup.Add(1)
-		go func(current container.Summary) {
+		go func(i int, current container.Summary) {
 			defer waitGroup.Done()
+			defer func() {
+				if recovered := recover(); recovered != nil {
+					perContainerErrors[i] = CustomErr{Metric: []string{"docker.container"}, Error: fmt.Sprintf("panic: %v", recovered)}
+				}
+			}()
 
-			metric, customErr := processContainer(ctx, cli, current)
-
-			resultMutex.Lock()
-			defer resultMutex.Unlock()
-
-			if customErr.Error != "" {
-				containerErrors = append(containerErrors, customErr)
-				return
-			}
-			metrics = append(metrics, metric)
-		}(currentContainer)
+			results[i], perContainerErrors[i] = processContainer(ctx, cli, current)
+		}(i, currentContainer)
 	}
 	waitGroup.Wait()
+
+	for i, metric := range results {
+		if customErr := perContainerErrors[i]; customErr.Error != "" {
+			customErr.Error = fmt.Sprintf("container %s (%s): %s", getContainerName(containers[i].Names), containers[i].ID, customErr.Error)
+			containerErrors = append(containerErrors, customErr)
+			continue
+		}
+		metrics = append(metrics, metric)
+	}
 
 	if len(containerErrors) > 0 {
 		return metrics, containerErrors
