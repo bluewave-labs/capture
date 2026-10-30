@@ -497,7 +497,7 @@ components:
           example: "0"
         critical_warning:
           type: string
-          example: "0"
+          example: "0x00"
         data_units_read:
           type: string
           example: "1234567"
@@ -512,7 +512,7 @@ components:
           example: "50000"
         percentage_used:
           type: string
-          example: "5"
+          example: "5%"
         power_cycles:
           type: string
           example: "100"
@@ -524,7 +524,7 @@ components:
           example: "PASSED"
         temperature:
           type: string
-          example: "35C"
+          example: "35 Celsius"
         unsafe_shutdowns:
           type: string
           example: "0"
