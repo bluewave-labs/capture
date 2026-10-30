@@ -20,6 +20,9 @@ import (
 //   - APISecret: Secret key for API access, default is a blank string.
 var appConfig *config.Config
 
+// shutdownTimeout is how long the server waits for in-flight requests when stopping.
+const shutdownTimeout = 5 * time.Second
+
 // Build information variables populated at build time.
 // These variables are typically set using ldflags during the build process
 // to provide runtime access to build metadata.
@@ -52,6 +55,13 @@ func main() {
 		os.Exit(0)
 	}
 
+	// A Windows service has no console, so logs go to the Windows Event Log instead
+	inService := isWindowsService()
+	if inService {
+		closeLog := redirectLogToEventLog()
+		defer closeLog()
+	}
+
 	appConfig = config.NewConfig(
 		os.Getenv("PORT"),
 		os.Getenv("API_SECRET"),
@@ -63,9 +73,17 @@ func main() {
 	srv := server.NewServer(appConfig, nil, &handler.CaptureMeta{
 		Version: Version,
 	})
+
+	if inService {
+		if err := runService(srv, shutdownTimeout); err != nil {
+			log.Fatalf("service failed: %v", err)
+		}
+		return
+	}
+
 	log.Println("WARNING: Remember to add http://" + server.GetLocalIP() + ":" + appConfig.Port + "/api/v1/metrics to your Checkmate Infrastructure Dashboard. Without this endpoint, system metrics will not be displayed.")
 
 	srv.Serve()
 
-	srv.GracefulShutdown(5 * time.Second)
+	srv.GracefulShutdown(shutdownTimeout)
 }
