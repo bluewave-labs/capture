@@ -59,6 +59,8 @@ func (s *Server) Stop(timeout time.Duration) {
 func InitializeHandler(config *config.Config, metadata *handler.CaptureMeta) http.Handler {
 	// Initialize the Gin with default middlewares
 	r := gin.Default()
+	// Return 405 instead of 404 for unsupported methods on known routes
+	r.HandleMethodNotAllowed = true
 	metadata.Mode = gin.Mode()
 	if gin.Mode() == gin.ReleaseMode {
 		println("running in Release Mode")
