@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bluewave-labs/capture/internal/config"
+	"github.com/bluewave-labs/capture/internal/metric"
 	"github.com/bluewave-labs/capture/internal/server"
 	"github.com/bluewave-labs/capture/internal/server/handler"
 )
@@ -65,6 +66,9 @@ func main() {
 		os.Getenv("PORT"),
 		os.Getenv("API_SECRET"),
 	)
+	if err := metric.ConfigureSmartDevices(os.Getenv("SMART_DEVICES")); err != nil {
+		log.Fatalln(err)
+	}
 
 	srv := server.NewServer(appConfig, nil, &handler.CaptureMeta{
 		Version: Version,
