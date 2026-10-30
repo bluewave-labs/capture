@@ -88,7 +88,7 @@ services:
 | `API_SECRET` | Authentication key ([Must match the secret you enter on Checkmate](https://docs.checkmate.so/users-guide/infrastructure-monitor#step-2-configure-general-settings)) | -       | Yes      |
 | `PORT`       | Server port number                                                                                                                                                  | 59232   | No       |
 | `GIN_MODE`   | Gin(web framework) mode. Debug is for development                                                                                                                   | release | No       |
-| `SMART_DEVICES` | Comma-separated SMART devices as `path` or `path:type`, e.g. `/dev/sdb:sat,/dev/sdc:sat`. Overrides the device type from `smartctl --scan` for those paths and adds devices the scan misses | - | No |
+| `SMART_DEVICES` | Comma-separated SMART devices as `path` or `path:type`, e.g. `/dev/sdb:sat,/dev/sdc:sat`. Overrides the device type from `smartctl --scan` for those paths (symlinks such as `/dev/disk/by-id/...` are matched to the scanned disk) and adds devices the scan misses. Checked at startup; an invalid value stops Capture with an error | - | No |
 
 Example configurations:
 

@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
+	"log"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -109,42 +111,97 @@ func parseScanOutput(output string) []smartDevice {
 	return devices
 }
 
+// smartctlDeviceTypes are the -d types from smartctl(8). A ":" suffix in a SMART_DEVICES
+// entry is only read as a type when it starts with one of these, because device paths
+// such as /dev/disk/by-path/pci-0000:00:17.0-ata-1 contain colons themselves.
+var smartctlDeviceTypes = map[string]bool{
+	"3ware": true, "aacraid": true, "areca": true, "ata": true, "auto": true, "cciss": true,
+	"hpt": true, "intelliprop": true, "jmb39x": true, "jmb39x-q": true, "jmb39x-q2": true,
+	"jms56x": true, "marvell": true, "megaraid": true, "nvme": true, "sat": true, "scsi": true,
+	"sntasmedia": true, "sntjmicron": true, "sntrealtek": true, "test": true, "usbasm1352r": true,
+	"usbcypress": true, "usbjmicron": true, "usbprolific": true, "usbsunplus": true,
+}
+
+// splitDeviceEntry splits a "path" or "path:type" entry at its last colon when the
+// part after it names a smartctl device type
+func splitDeviceEntry(entry string) smartDevice {
+	if idx := strings.LastIndex(entry, ":"); idx != -1 {
+		deviceType := strings.TrimSpace(entry[idx+1:])
+		base, _, _ := strings.Cut(deviceType, "+")
+		if smartctlDeviceTypes[base] {
+			return smartDevice{Path: strings.TrimSpace(entry[:idx]), Type: deviceType}
+		}
+	}
+	return smartDevice{Path: entry}
+}
+
 // parseSmartDevices parses the SMART_DEVICES value, a comma-separated list of
 // "path" or "path:type" entries, e.g. "/dev/sda:sat,/dev/nvme0".
 // Types that contain commas, such as "megaraid,0", are kept together: a piece
 // that does not start with "/" continues the previous entry's type.
-func parseSmartDevices(value string) []smartDevice {
+func parseSmartDevices(value string) ([]smartDevice, error) {
 	var devices []smartDevice
 	for _, entry := range strings.Split(value, ",") {
 		entry = strings.TrimSpace(entry)
 		if entry == "" {
 			continue
 		}
-		if !strings.HasPrefix(entry, "/") {
-			// Paths always start with "/", which also keeps entries from being read as smartctl options
-			if len(devices) > 0 {
-				devices[len(devices)-1].Type += "," + entry
-			}
+		if strings.HasPrefix(entry, "/") {
+			devices = append(devices, splitDeviceEntry(entry))
 			continue
 		}
-		path, deviceType, _ := strings.Cut(entry, ":")
-		devices = append(devices, smartDevice{Path: strings.TrimSpace(path), Type: strings.TrimSpace(deviceType)})
+
+		// Paths always start with "/", which also keeps entries from being read as smartctl options.
+		// A continuation with ":" is most likely a path missing its leading "/", e.g. "/dev/sdb:sat,sdc:sat".
+		if len(devices) == 0 || devices[len(devices)-1].Type == "" || strings.Contains(entry, ":") {
+			return nil, fmt.Errorf("invalid SMART_DEVICES entry %q: device paths must start with \"/\"", entry)
+		}
+		devices[len(devices)-1].Type += "," + entry
 	}
-	return devices
+	return devices, nil
+}
+
+// smartDeviceOverrides holds the devices from SMART_DEVICES, set once at startup by ConfigureSmartDevices
+var smartDeviceOverrides []smartDevice
+
+// ConfigureSmartDevices parses the SMART_DEVICES value so configuration errors are reported at startup
+func ConfigureSmartDevices(value string) error {
+	devices, err := parseSmartDevices(value)
+	if err != nil {
+		return err
+	}
+	for _, device := range devices {
+		if device.Type == "" {
+			log.Printf("SMART_DEVICES: querying %s with autodetected type", device.Path)
+		} else {
+			log.Printf("SMART_DEVICES: querying %s with type %s", device.Path, device.Type)
+		}
+	}
+	smartDeviceOverrides = devices
+	return nil
+}
+
+// resolveDevicePath follows symlinks such as /dev/disk/by-id/... so the same disk is not
+// queried twice under two names. Paths that cannot be resolved are returned unchanged.
+func resolveDevicePath(path string) string {
+	if resolved, err := filepath.EvalSymlinks(path); err == nil {
+		return resolved
+	}
+	return path
 }
 
 // mergeDevices applies overrides to the scanned devices. Every scanned entry whose
-// path appears in overrides is replaced by the override entries for that path, so
-// a path behind a RAID controller can be listed once per disk.
-func mergeDevices(scanned, overrides []smartDevice) []smartDevice {
+// resolved path matches an override is replaced by the override entries, so a path
+// behind a RAID controller can be listed once per disk.
+func mergeDevices(scanned, overrides []smartDevice, resolve func(string) string) []smartDevice {
 	overridden := make(map[string]bool, len(overrides))
 	for _, override := range overrides {
-		overridden[override.Path] = true
+		overridden[resolve(override.Path)] = true
 	}
 
 	merged := make([]smartDevice, 0, len(scanned)+len(overrides))
 	for _, device := range scanned {
-		if !overridden[device.Path] {
+		if !overridden[resolve(device.Path)] {
 			merged = append(merged, device)
 		}
 	}
@@ -161,8 +218,13 @@ func smartctlArgs(device smartDevice) []string {
 	return append(args, device.Path)
 }
 
+// standbyMessage matches the message smartctl prints when --nocheck skips a sleeping disk,
+// e.g. "Device is in STANDBY mode, exit(0)"
+var standbyMessage = regexp.MustCompile(`Device is in \S+ mode`)
+
 // parseSmartctlJSON converts `smartctl --json` output to SmartData.
-// It returns nil when the output holds no SMART data, e.g. for a device in standby.
+// It returns nil when the device is in standby, and an error when smartctl reported
+// no SMART data for another reason, e.g. SMART unsupported behind a USB bridge.
 func parseSmartctlJSON(output []byte) (*SmartData, error) {
 	var parsed smartctlOutput
 	if err := json.Unmarshal(output, &parsed); err != nil {
@@ -170,7 +232,14 @@ func parseSmartctlJSON(output []byte) (*SmartData, error) {
 	}
 
 	if parsed.SmartStatus == nil && parsed.Temperature == nil && parsed.PowerOnTime == nil && parsed.NvmeLog == nil && parsed.AtaAttributes == nil {
-		return nil, nil
+		messages := smartctlMessages(output)
+		if standbyMessage.MatchString(messages) {
+			return nil, nil
+		}
+		if messages == "" {
+			messages = "SMART may be unsupported or disabled on this device"
+		}
+		return nil, fmt.Errorf("no SMART data reported: %s", messages)
 	}
 
 	data := SmartData{}
@@ -233,6 +302,30 @@ func smartctlMessages(output []byte) string {
 	return strings.Join(messages, "; ")
 }
 
+// smartctlFailureReason describes why smartctl could not read a device
+func smartctlFailureReason(stdout, stderr []byte, err error) string {
+	combined := string(stdout) + string(stderr)
+	switch {
+	case strings.Contains(strings.ToLower(combined), "unrecognized option"):
+		// smartctl before 7.0 has no --json option
+		return "smartctl 7.0 or newer is required"
+	case strings.Contains(combined, "Permission denied"):
+		return "permission denied (try running as root)"
+	}
+
+	var reasons []string
+	if messages := smartctlMessages(stdout); messages != "" {
+		reasons = append(reasons, messages)
+	}
+	if text := strings.TrimSpace(string(stderr)); text != "" {
+		reasons = append(reasons, text)
+	}
+	if len(reasons) == 0 {
+		return err.Error()
+	}
+	return strings.Join(reasons, "; ")
+}
+
 func getMetrics(device smartDevice) (*SmartData, []CustomErr) {
 	// #nosec G204 -- no shell is involved; paths come from smartctl --scan or SMART_DEVICES and always start with "/"
 	out, err := exec.Command("smartctl", smartctlArgs(device)...).Output()
@@ -243,16 +336,9 @@ func getMetrics(device smartDevice) (*SmartData, []CustomErr) {
 		if exitErr.ExitCode()&smartctlFatalExitBits == 0 {
 			err = nil
 		} else {
-			reason := smartctlMessages(out)
-			if strings.Contains(reason, "Permission denied") {
-				reason = "permission denied (try running as root)"
-			}
-			if reason == "" {
-				reason = err.Error()
-			}
 			return nil, []CustomErr{{
 				Metric: []string{"smartctl"},
-				Error:  fmt.Sprintf("smartctl failed for %s: %s", device.Path, reason),
+				Error:  fmt.Sprintf("smartctl failed for %s: %s", device.Path, smartctlFailureReason(out, exitErr.Stderr, err)),
 			}}
 		}
 	}
@@ -275,10 +361,52 @@ func getMetrics(device smartDevice) (*SmartData, []CustomErr) {
 	return data, nil
 }
 
+// smartDataFields lists the fields of SmartData so results from several drives can be combined
+func smartDataFields(data *SmartData) []*string {
+	return []*string{
+		&data.AvailableSpare, &data.AvailableSpareThreshold, &data.ControllerBusyTime, &data.CriticalWarning,
+		&data.DataUnitsRead, &data.DataUnitsWritten, &data.HostReadCommands, &data.HostWriteCommands,
+		&data.PercentageUsed, &data.PowerCycles, &data.PowerOnHours, &data.SmartOverallHealthResult,
+		&data.Temperature, &data.UnsafeShutdowns,
+	}
+}
+
+// mergeSmartData combines per-device results into the single SmartData the API returns
+// until per-drive output exists. NVMe results come first so their values are kept for
+// fields both drive types report, other drives only fill fields that are still empty,
+// and a FAILED health result from any drive is reported.
+func mergeSmartData(results []*SmartData) SmartData {
+	ordered := make([]*SmartData, 0, len(results))
+	for _, result := range results {
+		// PercentageUsed is only filled from the NVMe health log
+		if result.PercentageUsed != "" {
+			ordered = append(ordered, result)
+		}
+	}
+	for _, result := range results {
+		if result.PercentageUsed == "" {
+			ordered = append(ordered, result)
+		}
+	}
+
+	var merged SmartData
+	mergedFields := smartDataFields(&merged)
+	for _, result := range ordered {
+		for i, field := range smartDataFields(result) {
+			if *mergedFields[i] == "" {
+				*mergedFields[i] = *field
+			}
+		}
+		if result.SmartOverallHealthResult == "FAILED" {
+			merged.SmartOverallHealthResult = "FAILED"
+		}
+	}
+	return merged
+}
+
 // GetSmartMetrics retrieves the SMART metrics from all available devices.
 // Devices from `smartctl --scan` can be extended or given an explicit type with SMART_DEVICES.
 func GetSmartMetrics() (SmartData, []CustomErr) {
-	var metrics SmartData
 	var smartCtlrErrs []CustomErr
 
 	// Check if smartctl is installed
@@ -287,10 +415,9 @@ func GetSmartMetrics() (SmartData, []CustomErr) {
 			Metric: []string{"smartctl"},
 			Error:  err.Error(),
 		})
-		return metrics, smartCtlrErrs
+		return SmartData{}, smartCtlrErrs
 	}
 	// Scan for devices
-	overrides := parseSmartDevices(os.Getenv("SMART_DEVICES"))
 	devices, devicesErr := scanDevices()
 	if devicesErr != nil {
 		smartCtlrErrs = append(smartCtlrErrs, CustomErr{
@@ -298,18 +425,19 @@ func GetSmartMetrics() (SmartData, []CustomErr) {
 			Error:  devicesErr.Error(),
 		})
 		// Without configured devices there is nothing left to query
-		if len(overrides) == 0 {
-			return metrics, smartCtlrErrs
+		if len(smartDeviceOverrides) == 0 {
+			return SmartData{}, smartCtlrErrs
 		}
 	}
-	devices = mergeDevices(devices, overrides)
+	devices = mergeDevices(devices, smartDeviceOverrides, resolveDevicePath)
 
 	// Iterate over devices and collect metrics
+	var results []*SmartData
 	for _, device := range devices {
 		metric, metricErr := getMetrics(device)
 
 		if metric != nil {
-			metrics = *metric
+			results = append(results, metric)
 		}
 
 		if len(metricErr) > 0 {
@@ -317,5 +445,5 @@ func GetSmartMetrics() (SmartData, []CustomErr) {
 		}
 	}
 
-	return metrics, smartCtlrErrs
+	return mergeSmartData(results), smartCtlrErrs
 }
