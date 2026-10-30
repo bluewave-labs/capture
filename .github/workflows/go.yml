@@ -1,69 +1,70 @@
 name: go
 
 on:
+  push:
+    branches:
+      - develop
   pull_request:
     branches:
       - main
       - develop
 
 concurrency:
-   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-   cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
+env:
+  STATICCHECK_VERSION: v0.8.2
+  GOLANGCI_LINT_VERSION: v2.15.0
+
 jobs:
   test:
+    name: test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-         os: [ubuntu-latest, ubuntu-24.04-arm, macos-15, windows-2025]
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-15, windows-2025]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
-          fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: 'go.mod'
-      - name: Run all tests
-        run: go test -v -timeout 30s ./test/...
-
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-         os: [ubuntu-latest, ubuntu-24.04-arm, macos-15, windows-2025]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
       - name: Build capture binary
         run: go build -o dist/capture ./cmd/capture/
+      - name: Run unit and integration tests
+        run: go test -v -timeout 60s ./test/... ./internal/...
 
   check:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
-          fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
-     
-      - name: Run linter
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION}
+      - name: Install golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          install-only: true
+      # Platform-specific files (build tags) are only checked when GOOS matches
+      - name: Run linters for each target OS
         run: |
-          go vet ./...
-          go run honnef.co/go/tools/cmd/staticcheck@latest -checks=all,-ST1000,-U1000 ./...
-          go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run
+          for goos in linux darwin windows; do
+            echo "::group::GOOS=${goos}"
+            GOOS="${goos}" go vet ./...
+            GOOS="${goos}" staticcheck -checks=all,-ST1000,-U1000 ./...
+            GOOS="${goos}" golangci-lint run
+            echo "::endgroup::"
+          done
