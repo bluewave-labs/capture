@@ -25,14 +25,14 @@ type Server struct {
 // It uses a goroutine to handle the server's ListenAndServe method, allowing the main thread to continue executing.
 func (s *Server) Serve() {
 	go func() {
-		if err := s.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
+		if err := s.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("server error: %v", err)
 		}
 	}()
 	log.Printf("server started on %s", s.Addr)
 }
 
-// GracefulShutdown gracefully shuts down the server with a timeout.
+// GracefulShutdown waits for an interrupt or terminate signal, then stops the server.
 func (s *Server) GracefulShutdown(timeout time.Duration) {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -40,6 +40,11 @@ func (s *Server) GracefulShutdown(timeout time.Duration) {
 	sig := <-quit
 	log.Printf("signal received: %v", sig)
 
+	s.Stop(timeout)
+}
+
+// Stop gracefully shuts down the server with a timeout.
+func (s *Server) Stop(timeout time.Duration) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 

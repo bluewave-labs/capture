@@ -125,8 +125,17 @@ Set-ItemProperty `
     -Value @("API_SECRET=$APISecret", "PORT=$Port", "GIN_MODE=release") `
     -Type  MultiString
 
+# Restart the service automatically if it exits unexpectedly (after 5s, 10s, then every 30s)
+& sc.exe failure $ServiceName reset= 86400 actions= restart/5000/restart/10000/restart/30000 | Out-Null
+
 # Start or restart the service (Restart-Service starts it if stopped, restarts if running)
-Restart-Service -Name $ServiceName -Force
+try {
+    Restart-Service -Name $ServiceName -Force
+} catch {
+    Write-Error ("Service '$ServiceName' failed to start: $($_.Exception.Message)`n" +
+        "Check Event Viewer > Windows Logs > Application for entries from source 'capture'.")
+    exit 1
+}
 Write-Host "Service status: $((Get-Service -Name $ServiceName).Status)"
 
 Write-Host ""
