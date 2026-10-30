@@ -9,9 +9,9 @@ on:
     paths:
         # Only run this workflow when files related to the disk filesystem integration tests are changed
       - .github/workflows/disk-fs-integration.yml
-      - internal/metric/disk.go
-      - test/integration/disk_fs_test.go
-      - test/integration/disk_env.go
+      - internal/metric/disk*.go
+      - internal/system/**
+      - test/integration/disk_*.go
       - test/helpers.go
       - go.mod
       - go.sum
@@ -31,20 +31,19 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
-          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
 
       - name: Install filesystem tools
         run: |
           sudo apt-get update
-          sudo apt install -y \
+          sudo apt-get install -y --no-install-recommends \
             e2fsprogs \
             xfsprogs \
             btrfs-progs \
