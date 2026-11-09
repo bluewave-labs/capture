@@ -77,6 +77,7 @@ services:
     environment:
       - API_SECRET=REPLACE_WITH_YOUR_SECRET # Required authentication key. Do not forget to replace this with your actual secret key.
       - GIN_MODE=release
+      - LISTEN=0.0.0.0
     volumes:
       - /etc/os-release:/etc/os-release:ro
 ```
@@ -87,6 +88,7 @@ services:
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------- |
 | `API_SECRET` | Authentication key ([Must match the secret you enter on Checkmate](https://docs.checkmate.so/users-guide/infrastructure-monitor#step-2-configure-general-settings)) | -       | Yes      |
 | `PORT`       | Server port number                                                                                                                                                  | 59232   | No       |
+| `LISTEN`     | IP address to bind to (e.g. `127.0.0.1` or `::1`), without a port or IPv6 brackets. Use an interface's IP address, not its name. | 0.0.0.0 | No |
 | `GIN_MODE`   | Gin(web framework) mode. Debug is for development                                                                                                                   | release | No       |
 | `SMART_DEVICES` | Comma-separated SMART devices as `path` or `path:type`, e.g. `/dev/sdb:sat,/dev/sdc:sat`. Overrides the device type from `smartctl --scan` for those paths (symlinks such as `/dev/disk/by-id/...` are matched to the scanned disk) and adds devices the scan misses. Checked at startup; an invalid value stops Capture with an error | - | No |
 
@@ -97,8 +99,14 @@ Example configurations:
 API_SECRET=your-secret-key ./capture
 
 # Complete
-API_SECRET=your-secret-key PORT=59232 GIN_MODE=release ./capture
+API_SECRET=your-secret-key LISTEN=0.0.0.0 PORT=59232 GIN_MODE=release ./capture
+
+# Local connections only (for a host installation with a local reverse proxy)
+API_SECRET=your-secret-key LISTEN=127.0.0.1 ./capture
 ```
+
+When `LISTEN` is unset or empty, Capture listens on all IPv4 interfaces (`0.0.0.0`).
+For containers, keep `LISTEN=0.0.0.0` to allow connections through Docker port mappings or from other containers.
 
 ## Installation Options
 
