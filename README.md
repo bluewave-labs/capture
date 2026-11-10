@@ -50,6 +50,10 @@ Capture is a hardware monitoring agent that collects hardware information from t
   - Read/Write Bytes
 - S.M.A.R.T. Monitoring (Self-Monitoring, Analysis and Reporting Technology) for NVMe and SATA drives. Requires smartmontools 7.0 or newer
 - Network Monitoring
+- Software RAID (mdadm) Monitoring on Linux
+  - Array state and missing disks
+  - Rebuild progress
+  - Member disk state
 - Docker Container Monitoring
 - GPU Monitoring (coming soon)
 
@@ -440,13 +444,14 @@ docker compose -f caddy.compose.yml up -d
 | Method | Path                     | Auth | Description                                                                                         | Notes                                          |
 | ------ | ------------------------ | ---- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
 | `GET`  | `/health`                | ❌   | Liveness probe that returns `"OK"`.                                                                 | Useful for container orchestrators.            |
-| `GET`  | `/api/v1/metrics`        | ✅   | Returns the complete capture payload with CPU, memory, disk, host, SMART, network, and Docker data. | Aggregates every collector.                    |
+| `GET`  | `/api/v1/metrics`        | ✅   | Returns CPU, memory, disk, host, network, and software RAID data.                                   | SMART and Docker have their own endpoints.     |
 | `GET`  | `/api/v1/metrics/cpu`    | ✅   | CPU temps, load, and utilization.                                                                   |                                                |
 | `GET`  | `/api/v1/metrics/memory` | ✅   | Memory totals and usage metrics.                                                                    |                                                |
 | `GET`  | `/api/v1/metrics/disk`   | ✅   | Disk capacity, inode usage, and IO stats.                                                           |                                                |
 | `GET`  | `/api/v1/metrics/host`   | ✅   | Host metadata (OS, uptime, kernel, etc.).                                                           |                                                |
 | `GET`  | `/api/v1/metrics/smart`  | ✅   | S.M.A.R.T. drive health information.                                                                |                                                |
 | `GET`  | `/api/v1/metrics/net`    | ✅   | Interface-level network throughput.                                                                 |                                                |
+| `GET`  | `/api/v1/metrics/raid`   | ✅   | Software RAID (mdadm) array state, missing disks, rebuild progress, and member state.               | Linux only; empty list when there are no arrays. |
 | `GET`  | `/api/v1/metrics/docker` | ✅   | Docker container metrics.                                                                           | Use `?all=true` to include stopped containers. |
 
 All responses share the same envelope:

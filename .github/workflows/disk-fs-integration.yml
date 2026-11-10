@@ -10,8 +10,10 @@ on:
         # Only run this workflow when files related to the disk filesystem integration tests are changed
       - .github/workflows/disk-fs-integration.yml
       - internal/metric/disk*.go
+      - internal/metric/raid*.go
       - internal/system/**
       - test/integration/disk_*.go
+      - test/integration/raid_test.go
       - test/helpers.go
       - go.mod
       - go.sum
@@ -48,14 +50,15 @@ jobs:
             xfsprogs \
             btrfs-progs \
             zfsutils-linux \
-            lvm2
+            lvm2 \
+            mdadm
 
       - name: Prepare kernel modules and loop devices
         run: |
           sudo modprobe loop || true
 
-      - name: Run disk filesystem integration test as root
+      - name: Run disk filesystem and RAID integration tests as root
         run: |
           GO_BIN="$(command -v go)"
           echo "Using Go binary: ${GO_BIN}"
-          sudo "${GO_BIN}" test -v -count=1 -run TestDiskFilesystemMetrics ./test/integration/
+          sudo "${GO_BIN}" test -v -count=1 -run 'TestDiskFilesystemMetrics|TestRaidMetrics' ./test/integration/

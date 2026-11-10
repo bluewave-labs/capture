@@ -24,6 +24,7 @@ func TestInitializeHandlerMethodHandling(t *testing.T) {
 		{"unsupported method on health", http.MethodPost, "/health", http.StatusMethodNotAllowed},
 		{"unknown route", http.MethodGet, "/api/v1/unknown", http.StatusNotFound},
 		{"known route without token", http.MethodGet, "/api/v1/metrics/cpu", http.StatusUnauthorized},
+		{"raid route without token", http.MethodGet, "/api/v1/metrics/raid", http.StatusUnauthorized},
 	}
 
 	for _, tt := range tests {
