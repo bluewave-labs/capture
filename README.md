@@ -204,6 +204,7 @@ An install script is provided at [`deployment/linux/install.sh`](./deployment/li
         | sudo bash -s -- \
             --api-secret "your-secret-key" \
             --port 59232 \
+            --listen 0.0.0.0 \
             --install-dir /usr/local/bin \
             --service-name capture
     ```
@@ -221,6 +222,7 @@ An install script is provided at [`deployment/linux/install.sh`](./deployment/li
     | ---------------- | ---------------------------------------- | -------------------- |
     | `--api-secret`   | Authentication key (required)            | *(prompted)*         |
     | `--port`         | Port the agent listens on                | `59232`              |
+    | `--listen`       | IP address the agent binds to            | `0.0.0.0`            |
     | `--install-dir`  | Directory to install the binary          | `/usr/local/bin`     |
     | `--service-name` | systemd service name                     | `capture`            |
 
@@ -292,6 +294,7 @@ An install script is provided at [`deployment/macos/install.sh`](./deployment/ma
         | sudo bash -s -- \
             --api-secret "your-secret-key" \
             --port 59232 \
+            --listen 0.0.0.0 \
             --install-dir /usr/local/bin \
             --service-name com.bluewavelabs.capture
     ```
@@ -309,6 +312,7 @@ An install script is provided at [`deployment/macos/install.sh`](./deployment/ma
     | ---------------- | ---------------------------------------- | ---------------------------- |
     | `--api-secret`   | Authentication key (required)            | *(prompted)*                 |
     | `--port`         | Port the agent listens on                | `59232`                      |
+    | `--listen`       | IP address the agent binds to            | `0.0.0.0`                    |
     | `--install-dir`  | Directory to install the binary          | `/usr/local/bin`             |
     | `--service-name` | launchd label and plist filename         | `com.bluewavelabs.capture`   |
 
@@ -381,7 +385,7 @@ A PowerShell install script is provided at [`deployment/windows/install.ps1`](./
     ```powershell
     & ([scriptblock]::Create(
         (Invoke-RestMethod https://raw.githubusercontent.com/bluewave-labs/capture/main/deployment/windows/install.ps1)
-    )) -APISecret "your-secret-key" -Port 59232 -InstallDir "C:\Program Files\Capture" -ServiceName "capture"
+    )) -APISecret "your-secret-key" -Port 59232 -Listen "0.0.0.0" -InstallDir "C:\Program Files\Capture" -ServiceName "capture"
     ```
 
     Or download the script first and run it locally:
@@ -398,6 +402,7 @@ A PowerShell install script is provided at [`deployment/windows/install.ps1`](./
     | -------------- | ---------------------------------------- | ---------------------------- |
     | `-APISecret`   | Authentication key (required)            | *(prompted)*                 |
     | `-Port`        | Port the agent listens on                | `59232`                      |
+    | `-Listen`      | IP address the agent binds to            | `0.0.0.0`                    |
     | `-InstallDir`  | Directory to install the binary          | `C:\Program Files\Capture`   |
     | `-ServiceName` | Windows service name                     | `capture`                    |
 
