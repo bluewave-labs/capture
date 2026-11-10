@@ -1,6 +1,7 @@
 package metric
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // smartDevice is a device to query with smartctl. An empty Type lets smartctl autodetect it.
@@ -22,6 +24,33 @@ type smartDevice struct {
 // Higher bits describe disk health and do not prevent reading the output.
 // See the RETURN VALUES section of smartctl(8).
 const smartctlFatalExitBits = 0b11
+
+// smartctlTimeout bounds a single smartctl run so one hung drive, typically behind
+// a USB bridge, cannot block the whole request. Variables so tests can shorten them.
+var (
+	smartctlTimeout   = 20 * time.Second
+	smartctlWaitDelay = 2 * time.Second
+	smartctlCommand   = "smartctl"
+)
+
+// errSmartctlTimeout is returned when smartctl does not finish within smartctlTimeout
+var errSmartctlTimeout = errors.New("smartctl timed out")
+
+// runSmartctl runs smartctl with a timeout. When the timeout expires the process is
+// killed; WaitDelay stops a process that does not exit from holding the request.
+func runSmartctl(args ...string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), smartctlTimeout)
+	defer cancel()
+
+	// #nosec G204 -- no shell is involved; paths come from smartctl --scan or SMART_DEVICES and always start with "/"
+	cmd := exec.CommandContext(ctx, smartctlCommand, args...)
+	cmd.WaitDelay = smartctlWaitDelay
+	out, err := cmd.Output()
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return out, fmt.Errorf("%w after %s", errSmartctlTimeout, smartctlTimeout)
+	}
+	return out, err
+}
 
 // ATA attribute IDs used to fill SmartData for SATA drives
 const (
@@ -72,7 +101,7 @@ type smartctlOutput struct {
 
 // Check if smartctl is installed
 func checkSmartctlInstalled() error {
-	_, err := exec.LookPath("smartctl")
+	_, err := exec.LookPath(smartctlCommand)
 	if err != nil {
 		return fmt.Errorf("smartctl is not installed")
 	}
@@ -81,7 +110,7 @@ func checkSmartctlInstalled() error {
 
 // scanDevices returns a list of disks using `smartctl --scan`
 func scanDevices() ([]smartDevice, error) {
-	out, err := exec.Command("smartctl", "--scan").Output()
+	out, err := runSmartctl("--scan")
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan devices: %w", err)
 	}
@@ -327,8 +356,7 @@ func smartctlFailureReason(stdout, stderr []byte, err error) string {
 }
 
 func getMetrics(device smartDevice) (*SmartData, []CustomErr) {
-	// #nosec G204 -- no shell is involved; paths come from smartctl --scan or SMART_DEVICES and always start with "/"
-	out, err := exec.Command("smartctl", smartctlArgs(device)...).Output()
+	out, err := runSmartctl(smartctlArgs(device)...)
 
 	// smartctl returns a bitmask; only the low bits mean the device could not be read
 	var exitErr *exec.ExitError
