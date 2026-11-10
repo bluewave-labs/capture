@@ -3,9 +3,12 @@ package metric
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestParseScanOutput(t *testing.T) {
@@ -354,5 +357,60 @@ func TestSmartctlFailureReason(t *testing.T) {
 				t.Errorf("smartctlFailureReason() = %q, expected %q", got, tt.expected)
 			}
 		})
+	}
+}
+
+// fakeSmartctl points smartctlCommand at a shell script for the duration of a test
+func fakeSmartctl(t *testing.T, script string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("fake smartctl is a shell script")
+	}
+	path := filepath.Join(t.TempDir(), "smartctl")
+	// #nosec G306 -- the fake smartctl must be executable; it lives in a per-test temp dir
+	if err := os.WriteFile(path, []byte("#!/bin/sh\n"+script+"\n"), 0o700); err != nil {
+		t.Fatalf("failed to write fake smartctl: %v", err)
+	}
+
+	command, timeout, waitDelay := smartctlCommand, smartctlTimeout, smartctlWaitDelay
+	t.Cleanup(func() { smartctlCommand, smartctlTimeout, smartctlWaitDelay = command, timeout, waitDelay })
+	smartctlCommand = path
+	smartctlTimeout = 200 * time.Millisecond
+	smartctlWaitDelay = 100 * time.Millisecond
+}
+
+func TestRunSmartctlTimeout(t *testing.T) {
+	fakeSmartctl(t, "sleep 30")
+
+	start := time.Now()
+	_, err := runSmartctl("--scan")
+	if elapsed := time.Since(start); elapsed > 5*time.Second {
+		t.Fatalf("runSmartctl() returned after %s, expected it to stop at the timeout", elapsed)
+	}
+	if !errors.Is(err, errSmartctlTimeout) {
+		t.Errorf("runSmartctl() error = %v, expected errSmartctlTimeout", err)
+	}
+}
+
+func TestGetMetricsTimeout(t *testing.T) {
+	fakeSmartctl(t, "sleep 30")
+
+	data, errs := getMetrics(smartDevice{Path: "/dev/sdz"})
+	if data != nil || len(errs) != 1 || !strings.Contains(errs[0].Error, "/dev/sdz") || !strings.Contains(errs[0].Error, "timed out") {
+		t.Errorf("getMetrics() = %+v, %+v, expected a timeout error naming the device", data, errs)
+	}
+}
+
+func TestRunSmartctlOutput(t *testing.T) {
+	fakeSmartctl(t, `echo "/dev/sda -d sat # /dev/sda [SAT], ATA device"`)
+	// Only the timeout tests need a short limit; starting a shell can take longer on a busy machine
+	smartctlTimeout = 10 * time.Second
+
+	out, err := runSmartctl("--scan")
+	if err != nil {
+		t.Fatalf("runSmartctl() error = %v", err)
+	}
+	if got := parseScanOutput(string(out)); len(got) != 1 || got[0].Path != "/dev/sda" {
+		t.Errorf("parseScanOutput(runSmartctl()) = %+v", got)
 	}
 }
