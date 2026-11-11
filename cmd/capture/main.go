@@ -15,6 +15,8 @@ import (
 
 // Application configuration variable that holds the settings.
 //
+//   - Listen: Server bind address, default is 0.0.0.0
+//
 //   - Port: Server port, default is 59232
 //
 //   - APISecret: Secret key for API access, default is a blank string.
@@ -55,6 +57,7 @@ func main() {
 	appConfig = config.NewConfig(
 		os.Getenv("PORT"),
 		os.Getenv("API_SECRET"),
+		os.Getenv("LISTEN"),
 	)
 	if err := metric.ConfigureSmartDevices(os.Getenv("SMART_DEVICES")); err != nil {
 		log.Fatalln(err)

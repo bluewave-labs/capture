@@ -25,6 +25,8 @@
 		<string>your_secret_here</string>
 		<key>PORT</key>
 		<string>59232</string>
+		<key>LISTEN</key>
+		<string>0.0.0.0</string>
 		<key>GIN_MODE</key>
 		<string>release</string>
 	</dict>

@@ -81,6 +81,7 @@ services:
     environment:
       - API_SECRET=REPLACE_WITH_YOUR_SECRET # Required authentication key. Do not forget to replace this with your actual secret key.
       - GIN_MODE=release
+      - LISTEN=0.0.0.0
     volumes:
       - /etc/os-release:/etc/os-release:ro
 ```
@@ -91,6 +92,7 @@ services:
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------- |
 | `API_SECRET` | Authentication key ([Must match the secret you enter on Checkmate](https://docs.checkmate.so/users-guide/infrastructure-monitor#step-2-configure-general-settings)) | -       | Yes      |
 | `PORT`       | Server port number                                                                                                                                                  | 59232   | No       |
+| `LISTEN`     | IP address to bind to (e.g. `127.0.0.1` or `::1`), without a port or IPv6 brackets. Use an interface's IP address, not its name. | 0.0.0.0 | No |
 | `GIN_MODE`   | Gin(web framework) mode. Debug is for development                                                                                                                   | release | No       |
 | `SMART_DEVICES` | Comma-separated SMART devices as `path` or `path:type`, e.g. `/dev/sdb:sat,/dev/sdc:sat`. Overrides the device type from `smartctl --scan` for those paths (symlinks such as `/dev/disk/by-id/...` are matched to the scanned disk) and adds devices the scan misses. Checked at startup; an invalid value stops Capture with an error | - | No |
 
@@ -101,8 +103,14 @@ Example configurations:
 API_SECRET=your-secret-key ./capture
 
 # Complete
-API_SECRET=your-secret-key PORT=59232 GIN_MODE=release ./capture
+API_SECRET=your-secret-key LISTEN=0.0.0.0 PORT=59232 GIN_MODE=release ./capture
+
+# Local connections only (for a host installation with a local reverse proxy)
+API_SECRET=your-secret-key LISTEN=127.0.0.1 ./capture
 ```
+
+When `LISTEN` is unset or empty, Capture listens on all IPv4 interfaces (`0.0.0.0`).
+For containers, keep `LISTEN=0.0.0.0` to allow connections through Docker port mappings or from other containers.
 
 ## Installation Options
 
@@ -200,6 +208,7 @@ An install script is provided at [`deployment/linux/install.sh`](./deployment/li
         | sudo bash -s -- \
             --api-secret "your-secret-key" \
             --port 59232 \
+            --listen 0.0.0.0 \
             --install-dir /usr/local/bin \
             --service-name capture
     ```
@@ -217,6 +226,7 @@ An install script is provided at [`deployment/linux/install.sh`](./deployment/li
     | ---------------- | ---------------------------------------- | -------------------- |
     | `--api-secret`   | Authentication key (required)            | *(prompted)*         |
     | `--port`         | Port the agent listens on                | `59232`              |
+    | `--listen`       | IP address the agent binds to            | `0.0.0.0`            |
     | `--install-dir`  | Directory to install the binary          | `/usr/local/bin`     |
     | `--service-name` | systemd service name                     | `capture`            |
 
@@ -288,6 +298,7 @@ An install script is provided at [`deployment/macos/install.sh`](./deployment/ma
         | sudo bash -s -- \
             --api-secret "your-secret-key" \
             --port 59232 \
+            --listen 0.0.0.0 \
             --install-dir /usr/local/bin \
             --service-name com.bluewavelabs.capture
     ```
@@ -305,6 +316,7 @@ An install script is provided at [`deployment/macos/install.sh`](./deployment/ma
     | ---------------- | ---------------------------------------- | ---------------------------- |
     | `--api-secret`   | Authentication key (required)            | *(prompted)*                 |
     | `--port`         | Port the agent listens on                | `59232`                      |
+    | `--listen`       | IP address the agent binds to            | `0.0.0.0`                    |
     | `--install-dir`  | Directory to install the binary          | `/usr/local/bin`             |
     | `--service-name` | launchd label and plist filename         | `com.bluewavelabs.capture`   |
 
@@ -377,7 +389,7 @@ A PowerShell install script is provided at [`deployment/windows/install.ps1`](./
     ```powershell
     & ([scriptblock]::Create(
         (Invoke-RestMethod https://raw.githubusercontent.com/bluewave-labs/capture/main/deployment/windows/install.ps1)
-    )) -APISecret "your-secret-key" -Port 59232 -InstallDir "C:\Program Files\Capture" -ServiceName "capture"
+    )) -APISecret "your-secret-key" -Port 59232 -Listen "0.0.0.0" -InstallDir "C:\Program Files\Capture" -ServiceName "capture"
     ```
 
     Or download the script first and run it locally:
@@ -394,6 +406,7 @@ A PowerShell install script is provided at [`deployment/windows/install.ps1`](./
     | -------------- | ---------------------------------------- | ---------------------------- |
     | `-APISecret`   | Authentication key (required)            | *(prompted)*                 |
     | `-Port`        | Port the agent listens on                | `59232`                      |
+    | `-Listen`      | IP address the agent binds to            | `0.0.0.0`                    |
     | `-InstallDir`  | Directory to install the binary          | `C:\Program Files\Capture`   |
     | `-ServiceName` | Windows service name                     | `capture`                    |
 
