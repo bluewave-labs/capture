@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -42,7 +43,7 @@ func runSmartctl(args ...string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), smartctlTimeout)
 	defer cancel()
 
-	// #nosec G204 -- no shell is involved; paths come from smartctl --scan or SMART_DEVICES and always start with "/"
+	// #nosec G204 -- no shell is involved; paths come from smartctl --scan or from SMART_DEVICES, whose entries must start with "/"
 	cmd := exec.CommandContext(ctx, smartctlCommand, args...)
 	cmd.WaitDelay = smartctlWaitDelay
 	out, err := cmd.Output()
@@ -54,9 +55,38 @@ func runSmartctl(args ...string) ([]byte, error) {
 
 // ATA attribute IDs used to fill SmartData for SATA drives
 const (
-	ataAttrUnexpectedPowerLoss = 174
-	ataAttrPowerOffRetract     = 192
+	ataAttrReallocatedSectors   = 5
+	ataAttrUnexpectedPowerLoss  = 174
+	ataAttrPowerOffRetract      = 192
+	ataAttrPendingSectors       = 197
+	ataAttrOfflineUncorrectable = 198
 )
+
+// Values of SmartData.Status
+const (
+	SmartStatusOK          = "ok"
+	SmartStatusStandby     = "standby"
+	SmartStatusUnsupported = "unsupported"
+	SmartStatusError       = "error"
+)
+
+// smartctlWarningBits maps smartctl exit status bits to warnings about the drive's health.
+// Bit 2 (a SMART command failed) is left out: some drives, such as Apple SSDs, set it on
+// every run because they do not support every log, which says nothing about their health.
+// See the RETURN VALUES section of smartctl(8).
+var smartctlWarningBits = []struct {
+	bit     int
+	warning string
+}{
+	{3, "disk_failing"},
+	{4, "prefail_attribute_at_threshold"},
+	{5, "attribute_was_at_threshold"},
+	{6, "error_log_has_errors"},
+	{7, "self_test_log_has_errors"},
+}
+
+// smartctlConcurrency caps how many drives are read at once
+const smartctlConcurrency = 4
 
 // smartctlOutput holds the parts of `smartctl --json` output that Capture reports
 type smartctlOutput struct {
@@ -65,7 +95,18 @@ type smartctlOutput struct {
 			String string `json:"string"`
 		} `json:"messages"`
 	} `json:"smartctl"`
-	SmartStatus *struct {
+	Device struct {
+		Type     string `json:"type"`
+		Protocol string `json:"protocol"`
+	} `json:"device"`
+	ModelName       string `json:"model_name"`
+	SerialNumber    string `json:"serial_number"`
+	FirmwareVersion string `json:"firmware_version"`
+	UserCapacity    *struct {
+		Bytes uint64 `json:"bytes"`
+	} `json:"user_capacity"`
+	ScsiGrownDefectList *int64 `json:"scsi_grown_defect_list"`
+	SmartStatus         *struct {
 		Passed bool `json:"passed"`
 	} `json:"smart_status"`
 	Temperature *struct {
@@ -88,6 +129,7 @@ type smartctlOutput struct {
 		PowerCycles             int64 `json:"power_cycles"`
 		PowerOnHours            int64 `json:"power_on_hours"`
 		UnsafeShutdowns         int64 `json:"unsafe_shutdowns"`
+		MediaErrors             int64 `json:"media_errors"`
 	} `json:"nvme_smart_health_information_log"`
 	AtaAttributes *struct {
 		Table []struct {
@@ -251,27 +293,37 @@ func smartctlArgs(device smartDevice) []string {
 // e.g. "Device is in STANDBY mode, exit(0)"
 var standbyMessage = regexp.MustCompile(`Device is in \S+ mode`)
 
-// parseSmartctlJSON converts `smartctl --json` output to SmartData.
-// It returns nil when the device is in standby, and an error when smartctl reported
-// no SMART data for another reason, e.g. SMART unsupported behind a USB bridge.
+// parseSmartctlJSON converts `smartctl --json` output to SmartData. Status is standby when
+// smartctl skipped a sleeping disk, unsupported when it reported no SMART data for another
+// reason (e.g. a virtual disk or a USB bridge without passthrough), and ok otherwise.
 func parseSmartctlJSON(output []byte) (*SmartData, error) {
 	var parsed smartctlOutput
 	if err := json.Unmarshal(output, &parsed); err != nil {
 		return nil, fmt.Errorf("failed to parse smartctl JSON output (smartctl 7.0 or newer is required): %w", err)
 	}
 
-	if parsed.SmartStatus == nil && parsed.Temperature == nil && parsed.PowerOnTime == nil && parsed.NvmeLog == nil && parsed.AtaAttributes == nil {
-		messages := smartctlMessages(output)
-		if standbyMessage.MatchString(messages) {
-			return nil, nil
-		}
-		if messages == "" {
-			messages = "SMART may be unsupported or disabled on this device"
-		}
-		return nil, fmt.Errorf("no SMART data reported: %s", messages)
+	data := SmartData{
+		Type:            parsed.Device.Type,
+		Protocol:        parsed.Device.Protocol,
+		Status:          SmartStatusOK,
+		ModelName:       parsed.ModelName,
+		SerialNumber:    parsed.SerialNumber,
+		FirmwareVersion: parsed.FirmwareVersion,
+		Warnings:        []string{},
+	}
+	if parsed.UserCapacity != nil {
+		capacity := parsed.UserCapacity.Bytes
+		data.CapacityBytes = &capacity
 	}
 
-	data := SmartData{}
+	if parsed.SmartStatus == nil && parsed.Temperature == nil && parsed.PowerOnTime == nil && parsed.NvmeLog == nil && parsed.AtaAttributes == nil {
+		data.Status = SmartStatusUnsupported
+		if standbyMessage.MatchString(smartctlMessages(output)) {
+			data.Status = SmartStatusStandby
+		}
+		return &data, nil
+	}
+
 	if parsed.SmartStatus != nil {
 		data.SmartOverallHealthResult = "FAILED"
 		if parsed.SmartStatus.Passed {
@@ -287,6 +339,9 @@ func parseSmartctlJSON(output []byte) (*SmartData, error) {
 	if parsed.PowerCycleCount != nil {
 		data.PowerCycles = strconv.FormatInt(*parsed.PowerCycleCount, 10)
 	}
+	if parsed.ScsiGrownDefectList != nil {
+		data.ReallocatedSectors = parsed.ScsiGrownDefectList
+	}
 
 	if nvme := parsed.NvmeLog; nvme != nil {
 		data.CriticalWarning = fmt.Sprintf("0x%02x", nvme.CriticalWarning)
@@ -301,6 +356,8 @@ func parseSmartctlJSON(output []byte) (*SmartData, error) {
 		data.PowerCycles = strconv.FormatInt(nvme.PowerCycles, 10)
 		data.PowerOnHours = strconv.FormatInt(nvme.PowerOnHours, 10)
 		data.UnsafeShutdowns = strconv.FormatInt(nvme.UnsafeShutdowns, 10)
+		mediaErrors := nvme.MediaErrors
+		data.MediaErrors = &mediaErrors
 	}
 
 	if ata := parsed.AtaAttributes; ata != nil {
@@ -308,6 +365,17 @@ func parseSmartctlJSON(output []byte) (*SmartData, error) {
 		for _, attr := range ata.Table {
 			rawValues[attr.ID] = attr.Raw.Value
 		}
+		// Attributes a drive does not report stay nil, so a missing reading is not shown as 0
+		rawValue := func(id int) *int64 {
+			if value, ok := rawValues[id]; ok {
+				return &value
+			}
+			return nil
+		}
+		data.ReallocatedSectors = rawValue(ataAttrReallocatedSectors)
+		data.PendingSectors = rawValue(ataAttrPendingSectors)
+		data.OfflineUncorrectable = rawValue(ataAttrOfflineUncorrectable)
+
 		if value, ok := rawValues[ataAttrUnexpectedPowerLoss]; ok {
 			data.UnsafeShutdowns = strconv.FormatInt(value, 10)
 		} else if value, ok := rawValues[ataAttrPowerOffRetract]; ok {
@@ -316,6 +384,20 @@ func parseSmartctlJSON(output []byte) (*SmartData, error) {
 	}
 
 	return &data, nil
+}
+
+// smartctlWarnings converts smartctl's exit status to health warnings
+func smartctlWarnings(exitCode int) []string {
+	warnings := []string{}
+	if exitCode < 0 {
+		return warnings
+	}
+	for _, warningBit := range smartctlWarningBits {
+		if exitCode&(1<<warningBit.bit) != 0 {
+			warnings = append(warnings, warningBit.warning)
+		}
+	}
+	return warnings
 }
 
 // smartctlMessages joins the messages smartctl reported in its JSON output
@@ -355,97 +437,103 @@ func smartctlFailureReason(stdout, stderr []byte, err error) string {
 	return strings.Join(reasons, "; ")
 }
 
+// getMetrics reads one device. It always returns the device, with status error when it could not be read.
 func getMetrics(device smartDevice) (*SmartData, []CustomErr) {
+	failed := func(reason string) (*SmartData, []CustomErr) {
+		return &SmartData{Device: device.Path, Type: device.Type, Status: SmartStatusError, Warnings: []string{}},
+			[]CustomErr{{
+				Metric: []string{"smartctl"},
+				Error:  fmt.Sprintf("smartctl failed for %s: %s", device.Path, reason),
+			}}
+	}
+
 	out, err := runSmartctl(smartctlArgs(device)...)
 
 	// smartctl returns a bitmask; only the low bits mean the device could not be read
+	exitCode := 0
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) {
-		if exitErr.ExitCode()&smartctlFatalExitBits == 0 {
-			err = nil
-		} else {
-			return nil, []CustomErr{{
-				Metric: []string{"smartctl"},
-				Error:  fmt.Sprintf("smartctl failed for %s: %s", device.Path, smartctlFailureReason(out, exitErr.Stderr, err)),
-			}}
+		exitCode = exitErr.ExitCode()
+		if exitCode&smartctlFatalExitBits != 0 {
+			return failed(smartctlFailureReason(out, exitErr.Stderr, err))
 		}
+		err = nil
 	}
-
-	// If there's an error executing the command, return the error
 	if err != nil {
-		return nil, []CustomErr{{
-			Metric: []string{"smartctl"},
-			Error:  fmt.Sprintf("smartctl failed for %s: %v", device.Path, err),
-		}}
+		return failed(err.Error())
 	}
 
 	data, parseErr := parseSmartctlJSON(out)
 	if parseErr != nil {
-		return nil, []CustomErr{{
-			Metric: []string{"smartctl"},
-			Error:  fmt.Sprintf("smartctl failed for %s: %v", device.Path, parseErr),
-		}}
+		return failed(parseErr.Error())
 	}
+	data.Device = device.Path
+	if device.Type != "" {
+		data.Type = device.Type
+	}
+	data.Warnings = smartctlWarnings(exitCode)
 	return data, nil
 }
 
-// smartDataFields lists the fields of SmartData so results from several drives can be combined
-func smartDataFields(data *SmartData) []*string {
-	return []*string{
-		&data.AvailableSpare, &data.AvailableSpareThreshold, &data.ControllerBusyTime, &data.CriticalWarning,
-		&data.DataUnitsRead, &data.DataUnitsWritten, &data.HostReadCommands, &data.HostWriteCommands,
-		&data.PercentageUsed, &data.PowerCycles, &data.PowerOnHours, &data.SmartOverallHealthResult,
-		&data.Temperature, &data.UnsafeShutdowns,
-	}
-}
-
-// mergeSmartData combines per-device results into the single SmartData the API returns
-// until per-drive output exists. NVMe results come first so their values are kept for
-// fields both drive types report, other drives only fill fields that are still empty,
-// and a FAILED health result from any drive is reported.
-func mergeSmartData(results []*SmartData) SmartData {
-	ordered := make([]*SmartData, 0, len(results))
-	for _, result := range results {
-		// PercentageUsed is only filled from the NVMe health log
-		if result.PercentageUsed != "" {
-			ordered = append(ordered, result)
-		}
-	}
-	for _, result := range results {
-		if result.PercentageUsed == "" {
-			ordered = append(ordered, result)
-		}
-	}
-
-	var merged SmartData
-	mergedFields := smartDataFields(&merged)
-	for _, result := range ordered {
-		for i, field := range smartDataFields(result) {
-			if *mergedFields[i] == "" {
-				*mergedFields[i] = *field
+// dedupeDrives drops later entries for a drive already listed under another path, such as
+// a multipath disk or /dev/nvme0 and /dev/nvme0n1. Drives are matched by model and serial;
+// entries without a serial are always kept.
+func dedupeDrives(drives []*SmartData) []*SmartData {
+	seen := make(map[string]bool, len(drives))
+	unique := make([]*SmartData, 0, len(drives))
+	for _, drive := range drives {
+		if drive.SerialNumber != "" {
+			key := drive.ModelName + "\x00" + drive.SerialNumber
+			if seen[key] {
+				continue
 			}
+			seen[key] = true
 		}
-		if result.SmartOverallHealthResult == "FAILED" {
-			merged.SmartOverallHealthResult = "FAILED"
-		}
+		unique = append(unique, drive)
 	}
-	return merged
+	return unique
 }
 
-// GetSmartMetrics retrieves the SMART metrics from all available devices.
+// readDevices reads every device, at most smartctlConcurrency at a time, keeping the device order
+func readDevices(devices []smartDevice) ([]*SmartData, []CustomErr) {
+	drives := make([]*SmartData, len(devices))
+	deviceErrs := make([][]CustomErr, len(devices))
+
+	var waitGroup sync.WaitGroup
+	slots := make(chan struct{}, smartctlConcurrency)
+	for i, device := range devices {
+		waitGroup.Add(1)
+		go func(i int, device smartDevice) {
+			defer waitGroup.Done()
+			slots <- struct{}{}
+			defer func() { <-slots }()
+			drives[i], deviceErrs[i] = getMetrics(device)
+		}(i, device)
+	}
+	waitGroup.Wait()
+
+	var errs []CustomErr
+	for _, deviceErr := range deviceErrs {
+		errs = append(errs, deviceErr...)
+	}
+	return drives, errs
+}
+
+// GetSmartMetrics returns the SMART state of every drive, one entry per drive.
 // Devices from `smartctl --scan` can be extended or given an explicit type with SMART_DEVICES.
-func GetSmartMetrics() (SmartData, []CustomErr) {
-	var smartCtlrErrs []CustomErr
+func GetSmartMetrics() (MetricsSlice, []CustomErr) {
+	metrics := make(MetricsSlice, 0)
 
 	// Check if smartctl is installed
 	if err := checkSmartctlInstalled(); err != nil {
-		smartCtlrErrs = append(smartCtlrErrs, CustomErr{
+		return metrics, []CustomErr{{
 			Metric: []string{"smartctl"},
 			Error:  err.Error(),
-		})
-		return SmartData{}, smartCtlrErrs
+		}}
 	}
+
 	// Scan for devices
+	var smartCtlrErrs []CustomErr
 	devices, devicesErr := scanDevices()
 	if devicesErr != nil {
 		smartCtlrErrs = append(smartCtlrErrs, CustomErr{
@@ -454,24 +542,15 @@ func GetSmartMetrics() (SmartData, []CustomErr) {
 		})
 		// Without configured devices there is nothing left to query
 		if len(smartDeviceOverrides) == 0 {
-			return SmartData{}, smartCtlrErrs
+			return metrics, smartCtlrErrs
 		}
 	}
 	devices = mergeDevices(devices, smartDeviceOverrides, resolveDevicePath)
 
-	// Iterate over devices and collect metrics
-	var results []*SmartData
-	for _, device := range devices {
-		metric, metricErr := getMetrics(device)
-
-		if metric != nil {
-			results = append(results, metric)
-		}
-
-		if len(metricErr) > 0 {
-			smartCtlrErrs = append(smartCtlrErrs, metricErr...)
-		}
+	drives, deviceErrs := readDevices(devices)
+	smartCtlrErrs = append(smartCtlrErrs, deviceErrs...)
+	for _, drive := range dedupeDrives(drives) {
+		metrics = append(metrics, drive)
 	}
-
-	return mergeSmartData(results), smartCtlrErrs
+	return metrics, smartCtlrErrs
 }

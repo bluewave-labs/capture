@@ -8,7 +8,23 @@ type Metric interface {
 	isMetric()
 }
 
+// SmartData is the SMART state of one drive
 type SmartData struct {
+	Device          string   `json:"device"`           // Device path passed to smartctl, e.g. /dev/sda
+	Type            string   `json:"type"`             // smartctl device type, e.g. sat, nvme, megaraid,0
+	Protocol        string   `json:"protocol"`         // ATA, NVMe or SCSI
+	Status          string   `json:"status"`           // ok, standby, unsupported or error
+	ModelName       string   `json:"model_name"`       // Drive model
+	SerialNumber    string   `json:"serial_number"`    // Drive serial; use it, not the path, to identify a drive over time
+	FirmwareVersion string   `json:"firmware_version"` // Drive firmware
+	CapacityBytes   *uint64  `json:"capacity_bytes"`   // User capacity in bytes (nil if not reported)
+	Warnings        []string `json:"warnings"`         // Health warnings from smartctl's exit status
+
+	ReallocatedSectors   *int64 `json:"reallocated_sectors"`   // ATA attribute 5, or the SCSI grown defect list (nil if not reported)
+	PendingSectors       *int64 `json:"pending_sectors"`       // ATA attribute 197 (nil if not reported)
+	OfflineUncorrectable *int64 `json:"offline_uncorrectable"` // ATA attribute 198 (nil if not reported)
+	MediaErrors          *int64 `json:"media_errors"`          // NVMe media and data integrity errors (nil if not reported)
+
 	AvailableSpare           string `json:"available_spare"`
 	AvailableSpareThreshold  string `json:"available_spare_threshold"`
 	ControllerBusyTime       string `json:"controller_busy_time"`

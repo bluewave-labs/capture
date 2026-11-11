@@ -48,7 +48,11 @@ Capture is a hardware monitoring agent that collects hardware information from t
   - Usage
   - Inode Usage
   - Read/Write Bytes
-- S.M.A.R.T. Monitoring (Self-Monitoring, Analysis and Reporting Technology) for NVMe and SATA drives. Requires smartmontools 7.0 or newer
+- S.M.A.R.T. Monitoring (Self-Monitoring, Analysis and Reporting Technology) for NVMe, SATA and SAS drives, one entry per drive. Requires smartmontools 7.0 or newer and, on most systems, running Capture as root. Not available in the Docker image, which does not include smartctl
+  - Model, serial number, firmware and capacity
+  - Overall health, temperature, power-on hours
+  - Reallocated, pending and uncorrectable sectors (SATA/SAS); wear, spare and media errors (NVMe)
+  - Warnings from smartctl, e.g. failing attributes or errors in the drive's error log
 - Network Monitoring
 - Docker Container Monitoring
 - GPU Monitoring (coming soon)
@@ -445,7 +449,7 @@ docker compose -f caddy.compose.yml up -d
 | `GET`  | `/api/v1/metrics/memory` | ✅   | Memory totals and usage metrics.                                                                    |                                                |
 | `GET`  | `/api/v1/metrics/disk`   | ✅   | Disk capacity, inode usage, and IO stats.                                                           |                                                |
 | `GET`  | `/api/v1/metrics/host`   | ✅   | Host metadata (OS, uptime, kernel, etc.).                                                           |                                                |
-| `GET`  | `/api/v1/metrics/smart`  | ✅   | S.M.A.R.T. drive health information.                                                                |                                                |
+| `GET`  | `/api/v1/metrics/smart`  | ✅   | S.M.A.R.T. health, one entry per drive.                                                             | Identify drives by `serial_number`; device paths can change after a reboot. |
 | `GET`  | `/api/v1/metrics/net`    | ✅   | Interface-level network throughput.                                                                 |                                                |
 | `GET`  | `/api/v1/metrics/docker` | ✅   | Docker container metrics.                                                                           | Use `?all=true` to include stopped containers. |
 
