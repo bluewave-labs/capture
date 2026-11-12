@@ -5,7 +5,7 @@
 # Usage:
 #   sudo bash install.sh
 #   sudo bash install.sh --api-secret "your-secret-key"
-#   sudo bash install.sh --api-secret "your-secret-key" --port 8080
+#   sudo bash install.sh --api-secret "your-secret-key" --port 8080 --listen 127.0.0.1
 #   sudo bash install.sh --api-secret "your-secret-key" \
 #                        --install-dir /opt/capture     \
 #                        --service-name capture
@@ -13,6 +13,7 @@
 # Options:
 #   --api-secret   <string>   Authentication key for the Capture API  (required, prompted if omitted)
 #   --port         <int>      Port the server listens on              (default: 59232)
+#   --listen       <address>  IP address the server binds to          (default: 0.0.0.0)
 #   --install-dir  <path>     Directory to install the binary         (default: /usr/local/bin)
 #   --service-name <name>     systemd service name                    (default: capture)
 
@@ -41,6 +42,7 @@ fi
 
 API_SECRET=""
 PORT=59232
+LISTEN="0.0.0.0"
 INSTALL_DIR="/usr/local/bin"
 SERVICE_NAME="capture"
 
@@ -52,6 +54,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --api-secret)   API_SECRET="$2";   shift 2 ;;
         --port)         PORT="$2";         shift 2 ;;
+        --listen)       LISTEN="$2";       shift 2 ;;
         --install-dir)  INSTALL_DIR="$2";  shift 2 ;;
         --service-name) SERVICE_NAME="$2"; shift 2 ;;
         *) die "Unknown option: $1" ;;
@@ -191,6 +194,7 @@ ProtectKernelLogs=yes
 ProtectControlGroups=yes
 Environment="API_SECRET=${API_SECRET}"
 Environment="PORT=${PORT}"
+Environment="LISTEN=${LISTEN}"
 Environment="GIN_MODE=release"
 
 [Install]
@@ -226,6 +230,7 @@ echo "================================================="
 echo ""
 echo "  Install path  : $INSTALL_PATH"
 echo "  Service name  : $SERVICE_NAME"
+echo "  Listen address: $LISTEN"
 echo "  Port          : $PORT"
 echo ""
 echo "  Useful commands:"
@@ -235,6 +240,12 @@ echo "    systemctl start   $SERVICE_NAME"
 echo "    systemctl restart $SERVICE_NAME"
 echo "    journalctl -u     $SERVICE_NAME -f"
 echo ""
+HEALTH_HOST="$LISTEN"
+case "$HEALTH_HOST" in
+    ""|0.0.0.0) HEALTH_HOST="127.0.0.1" ;;
+    ::) HEALTH_HOST="[::1]" ;;
+    *:*) HEALTH_HOST="[$HEALTH_HOST]" ;;
+esac
 echo "  Health check:"
-echo "    curl http://localhost:$PORT/health"
+echo "    curl http://$HEALTH_HOST:$PORT/health"
 echo ""

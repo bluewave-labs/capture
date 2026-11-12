@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -91,7 +92,7 @@ func NewServer(config *config.Config, handler http.Handler, metadata *handler.Ca
 	}
 	return &Server{
 		Server: &http.Server{
-			Addr:              "0.0.0.0:" + config.Port,
+			Addr:              net.JoinHostPort(config.Listen, config.Port),
 			Handler:           handler,
 			ReadHeaderTimeout: 5 * time.Second,
 		},

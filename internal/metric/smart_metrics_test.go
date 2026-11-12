@@ -2,10 +2,14 @@ package metric
 
 import (
 	"errors"
+	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestParseScanOutput(t *testing.T) {
@@ -153,51 +157,46 @@ func TestMergeDevices(t *testing.T) {
 	}
 }
 
-func TestMergeSmartData(t *testing.T) {
-	sata := &SmartData{
-		PowerCycles:              "87",
-		PowerOnHours:             "35210",
-		SmartOverallHealthResult: "PASSED",
-		Temperature:              "34 Celsius",
-		UnsafeShutdowns:          "41",
-	}
-	nvme := &SmartData{
-		AvailableSpare:           "100%",
-		PercentageUsed:           "3%",
-		PowerOnHours:             "6120",
-		SmartOverallHealthResult: "PASSED",
-		Temperature:              "41 Celsius",
+func int64Ptr(value int64) *int64    { return &value }
+func uint64Ptr(value uint64) *uint64 { return &value }
+
+func TestDedupeDrives(t *testing.T) {
+	drives := []*SmartData{
+		{Device: "/dev/sda", ModelName: "Disk A", SerialNumber: "A1"},
+		{Device: "/dev/sdc", ModelName: "Disk A", SerialNumber: "A1"}, // same disk on a second path
+		{Device: "/dev/sdb", ModelName: "Disk B", SerialNumber: "A1"}, // same serial, different model
+		{Device: "/dev/sdd", Status: SmartStatusStandby},              // no serial
+		{Device: "/dev/sde", Status: SmartStatusStandby},              // no serial
 	}
 
-	t.Run("NVMe values are kept on a mixed host", func(t *testing.T) {
-		got := mergeSmartData([]*SmartData{sata, nvme})
-		expected := SmartData{
-			AvailableSpare:           "100%",
-			PercentageUsed:           "3%",
-			PowerCycles:              "87",
-			PowerOnHours:             "6120",
-			SmartOverallHealthResult: "PASSED",
-			Temperature:              "41 Celsius",
-			UnsafeShutdowns:          "41",
-		}
-		if got != expected {
-			t.Errorf("mergeSmartData() = %+v, expected %+v", got, expected)
-		}
-	})
+	devices := make([]string, 0, len(drives))
+	for _, drive := range dedupeDrives(drives) {
+		devices = append(devices, drive.Device)
+	}
+	expected := []string{"/dev/sda", "/dev/sdb", "/dev/sdd", "/dev/sde"}
+	if !reflect.DeepEqual(devices, expected) {
+		t.Errorf("dedupeDrives() devices = %v, expected %v", devices, expected)
+	}
+}
 
-	t.Run("a failed drive is reported", func(t *testing.T) {
-		failed := *sata
-		failed.SmartOverallHealthResult = "FAILED"
-		if got := mergeSmartData([]*SmartData{nvme, &failed}); got.SmartOverallHealthResult != "FAILED" {
-			t.Errorf("mergeSmartData() health = %q, expected FAILED", got.SmartOverallHealthResult)
+func TestSmartctlWarnings(t *testing.T) {
+	tests := []struct {
+		exitCode int
+		expected []string
+	}{
+		{0, []string{}},
+		// Bit 2 alone: a SMART command failed, e.g. an unsupported log on Apple SSDs
+		{4, []string{}},
+		{8, []string{"disk_failing"}},
+		{4 | 16 | 64, []string{"prefail_attribute_at_threshold", "error_log_has_errors"}},
+		{32 | 128, []string{"attribute_was_at_threshold", "self_test_log_has_errors"}},
+		{-1, []string{}},
+	}
+	for _, tt := range tests {
+		if got := smartctlWarnings(tt.exitCode); !reflect.DeepEqual(got, tt.expected) {
+			t.Errorf("smartctlWarnings(%d) = %v, expected %v", tt.exitCode, got, tt.expected)
 		}
-	})
-
-	t.Run("no results", func(t *testing.T) {
-		if got := mergeSmartData(nil); got != (SmartData{}) {
-			t.Errorf("mergeSmartData(nil) = %+v, expected empty", got)
-		}
-	})
+	}
 }
 
 func TestSmartctlArgs(t *testing.T) {
@@ -229,6 +228,17 @@ func TestParseSmartctlJSON(t *testing.T) {
 			name:    "SATA drive",
 			fixture: "testdata/smartctl_sata.json",
 			expected: SmartData{
+				Type:                     "sat",
+				Protocol:                 "ATA",
+				Status:                   SmartStatusOK,
+				ModelName:                "WDC WD40EFRX-68N32N0",
+				SerialNumber:             "WD-TESTSERIAL0001",
+				FirmwareVersion:          "82.00A82",
+				CapacityBytes:            uint64Ptr(4000787030016),
+				Warnings:                 []string{},
+				ReallocatedSectors:       int64Ptr(0),
+				PendingSectors:           int64Ptr(2),
+				OfflineUncorrectable:     int64Ptr(0),
 				PowerCycles:              "87",
 				PowerOnHours:             "35210",
 				SmartOverallHealthResult: "PASSED",
@@ -240,6 +250,15 @@ func TestParseSmartctlJSON(t *testing.T) {
 			name:    "NVMe drive",
 			fixture: "testdata/smartctl_nvme.json",
 			expected: SmartData{
+				Type:                     "nvme",
+				Protocol:                 "NVMe",
+				Status:                   SmartStatusOK,
+				ModelName:                "Samsung SSD 980 PRO 1TB",
+				SerialNumber:             "S5GXNX0TEST001",
+				FirmwareVersion:          "5B2QGXA7",
+				CapacityBytes:            uint64Ptr(1000204886016),
+				Warnings:                 []string{},
+				MediaErrors:              int64Ptr(3),
 				AvailableSpare:           "100%",
 				AvailableSpareThreshold:  "10%",
 				ControllerBusyTime:       "1874",
@@ -269,11 +288,50 @@ func TestParseSmartctlJSON(t *testing.T) {
 			if err != nil {
 				t.Fatalf("parseSmartctlJSON() error = %v", err)
 			}
-			if got == nil || *got != tt.expected {
+			if got == nil || !reflect.DeepEqual(*got, tt.expected) {
 				t.Errorf("parseSmartctlJSON() = %+v, expected %+v", got, tt.expected)
 			}
 		})
 	}
+}
+
+// TestParseSmartctlJSONAppleNVMe uses real smartctl 7.5 output from an Apple Silicon Mac, serial number replaced
+func TestParseSmartctlJSONAppleNVMe(t *testing.T) {
+	output, err := os.ReadFile("testdata/smartctl_apple_nvme.json")
+	if err != nil {
+		t.Fatalf("failed to read fixture: %v", err)
+	}
+	got, err := parseSmartctlJSON(output)
+	if err != nil {
+		t.Fatalf("parseSmartctlJSON() error = %v", err)
+	}
+	if got.Status != SmartStatusOK || got.ModelName != "APPLE SSD AP0512Z" || got.SerialNumber != "APPLETESTSERIAL1" ||
+		got.Protocol != "NVMe" || got.SmartOverallHealthResult != "PASSED" || got.Temperature == "" ||
+		got.PercentageUsed == "" || got.MediaErrors == nil {
+		t.Errorf("parseSmartctlJSON() = %+v", got)
+	}
+	if got.CapacityBytes != nil {
+		t.Errorf("CapacityBytes = %d, expected nil because the drive does not report it", *got.CapacityBytes)
+	}
+}
+
+func TestParseSmartctlJSONEdgeCases(t *testing.T) {
+	t.Run("missing ATA attributes stay nil", func(t *testing.T) {
+		got, err := parseSmartctlJSON([]byte(`{"ata_smart_attributes": {"table": [{"id": 9, "raw": {"value": 100}}]}}`))
+		if err != nil {
+			t.Fatalf("parseSmartctlJSON() error = %v", err)
+		}
+		if got.ReallocatedSectors != nil || got.PendingSectors != nil || got.OfflineUncorrectable != nil {
+			t.Errorf("parseSmartctlJSON() = %+v, expected nil sector counts", got)
+		}
+	})
+
+	t.Run("SAS grown defect list", func(t *testing.T) {
+		got, err := parseSmartctlJSON([]byte(`{"device": {"protocol": "SCSI"}, "smart_status": {"passed": true}, "scsi_grown_defect_list": 12}`))
+		if err != nil || got.ReallocatedSectors == nil || *got.ReallocatedSectors != 12 || got.Protocol != "SCSI" {
+			t.Errorf("parseSmartctlJSON() = %+v, %v, expected 12 reallocated sectors", got, err)
+		}
+	})
 
 	t.Run("failed health status", func(t *testing.T) {
 		got, err := parseSmartctlJSON([]byte(`{"smart_status": {"passed": false}}`))
@@ -282,23 +340,17 @@ func TestParseSmartctlJSON(t *testing.T) {
 		}
 	})
 
-	t.Run("device in standby has no data", func(t *testing.T) {
+	t.Run("device in standby", func(t *testing.T) {
 		got, err := parseSmartctlJSON([]byte(`{"smartctl": {"exit_status": 0, "messages": [{"string": "Device is in STANDBY mode, exit(0)", "severity": "information"}]}}`))
-		if err != nil || got != nil {
-			t.Errorf("parseSmartctlJSON() = %+v, %v, expected nil data and no error", got, err)
+		if err != nil || got == nil || got.Status != SmartStatusStandby || got.SmartOverallHealthResult != "" {
+			t.Errorf("parseSmartctlJSON() = %+v, %v, expected status standby and no values", got, err)
 		}
 	})
 
-	t.Run("device without SMART support is an error", func(t *testing.T) {
-		got, err := parseSmartctlJSON([]byte(`{"smartctl": {"exit_status": 0, "messages": [{"string": "SMART support is: Unavailable - device lacks SMART capability.", "severity": "information"}]}}`))
-		if err == nil || !strings.Contains(err.Error(), "SMART support is: Unavailable") {
-			t.Errorf("parseSmartctlJSON() = %+v, %v, expected an error naming the reason", got, err)
-		}
-	})
-
-	t.Run("no data and no messages is an error", func(t *testing.T) {
-		if got, err := parseSmartctlJSON([]byte(`{}`)); err == nil {
-			t.Errorf("parseSmartctlJSON() = %+v, expected an error", got)
+	t.Run("device without SMART support", func(t *testing.T) {
+		got, err := parseSmartctlJSON([]byte(`{"model_name": "QEMU HARDDISK", "smartctl": {"exit_status": 0, "messages": [{"string": "SMART support is: Unavailable - device lacks SMART capability.", "severity": "information"}]}}`))
+		if err != nil || got == nil || got.Status != SmartStatusUnsupported || got.ModelName != "QEMU HARDDISK" {
+			t.Errorf("parseSmartctlJSON() = %+v, %v, expected status unsupported with the model", got, err)
 		}
 	})
 
@@ -354,5 +406,101 @@ func TestSmartctlFailureReason(t *testing.T) {
 				t.Errorf("smartctlFailureReason() = %q, expected %q", got, tt.expected)
 			}
 		})
+	}
+}
+
+// fakeSmartctl points smartctlCommand at a shell script for the duration of a test
+func fakeSmartctl(t *testing.T, script string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("fake smartctl is a shell script")
+	}
+	path := filepath.Join(t.TempDir(), "smartctl")
+	// #nosec G306 -- the fake smartctl must be executable; it lives in a per-test temp dir
+	if err := os.WriteFile(path, []byte("#!/bin/sh\n"+script+"\n"), 0o700); err != nil {
+		t.Fatalf("failed to write fake smartctl: %v", err)
+	}
+
+	command, timeout, waitDelay := smartctlCommand, smartctlTimeout, smartctlWaitDelay
+	t.Cleanup(func() { smartctlCommand, smartctlTimeout, smartctlWaitDelay = command, timeout, waitDelay })
+	smartctlCommand = path
+	smartctlTimeout = 200 * time.Millisecond
+	smartctlWaitDelay = 100 * time.Millisecond
+}
+
+func TestRunSmartctlTimeout(t *testing.T) {
+	fakeSmartctl(t, "sleep 30")
+
+	start := time.Now()
+	_, err := runSmartctl("--scan")
+	if elapsed := time.Since(start); elapsed > 5*time.Second {
+		t.Fatalf("runSmartctl() returned after %s, expected it to stop at the timeout", elapsed)
+	}
+	if !errors.Is(err, errSmartctlTimeout) {
+		t.Errorf("runSmartctl() error = %v, expected errSmartctlTimeout", err)
+	}
+}
+
+func TestGetMetricsTimeout(t *testing.T) {
+	fakeSmartctl(t, "sleep 30")
+
+	data, errs := getMetrics(smartDevice{Path: "/dev/sdz", Type: "sat"})
+	if len(errs) != 1 || !strings.Contains(errs[0].Error, "/dev/sdz") || !strings.Contains(errs[0].Error, "timed out") {
+		t.Errorf("getMetrics() errors = %+v, expected a timeout error naming the device", errs)
+	}
+	// The drive is still listed so it does not look like it disappeared
+	if data == nil || data.Device != "/dev/sdz" || data.Type != "sat" || data.Status != SmartStatusError {
+		t.Errorf("getMetrics() = %+v, expected the device with status error", data)
+	}
+}
+
+func TestGetMetricsWarningsAndType(t *testing.T) {
+	// Exit status 68: bit 2 (ignored) and bit 6 (error log has errors)
+	fakeSmartctl(t, `cat testdata/smartctl_sata.json; exit 68`)
+	smartctlTimeout = 10 * time.Second
+
+	data, errs := getMetrics(smartDevice{Path: "/dev/sdf"})
+	if len(errs) != 0 {
+		t.Fatalf("getMetrics() errors = %+v", errs)
+	}
+	if data.Device != "/dev/sdf" || data.Type != "sat" || data.Status != SmartStatusOK {
+		t.Errorf("getMetrics() = %+v, expected /dev/sdf with the type smartctl detected", data)
+	}
+	if !reflect.DeepEqual(data.Warnings, []string{"error_log_has_errors"}) {
+		t.Errorf("Warnings = %v, expected [error_log_has_errors]", data.Warnings)
+	}
+}
+
+func TestReadDevicesKeepsOrder(t *testing.T) {
+	// The last argument is the device path; answer with a minimal drive named after it
+	fakeSmartctl(t, `for last; do :; done; printf '{"serial_number": "%s", "smart_status": {"passed": true}}' "$last"`)
+	smartctlTimeout = 10 * time.Second
+
+	devices := make([]smartDevice, 0, smartctlConcurrency*3)
+	for i := range smartctlConcurrency * 3 {
+		devices = append(devices, smartDevice{Path: fmt.Sprintf("/dev/sd%c", 'a'+i)})
+	}
+	drives, errs := readDevices(devices)
+	if len(errs) != 0 {
+		t.Fatalf("readDevices() errors = %+v", errs)
+	}
+	for i, drive := range drives {
+		if drive.Device != devices[i].Path || drive.SerialNumber != devices[i].Path {
+			t.Errorf("drive %d = %+v, expected %s", i, drive, devices[i].Path)
+		}
+	}
+}
+
+func TestRunSmartctlOutput(t *testing.T) {
+	fakeSmartctl(t, `echo "/dev/sda -d sat # /dev/sda [SAT], ATA device"`)
+	// Only the timeout tests need a short limit; starting a shell can take longer on a busy machine
+	smartctlTimeout = 10 * time.Second
+
+	out, err := runSmartctl("--scan")
+	if err != nil {
+		t.Fatalf("runSmartctl() error = %v", err)
+	}
+	if got := parseScanOutput(string(out)); len(got) != 1 || got[0].Path != "/dev/sda" {
+		t.Errorf("parseScanOutput(runSmartctl()) = %+v", got)
 	}
 }

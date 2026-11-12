@@ -130,6 +130,7 @@ paths:
   /api/v1/metrics/smart:
     get:
       summary: Read S.M.A.R.T. data
+      description: One entry per drive. Requires smartmontools 7.0 or newer and, on most systems, root.
       responses:
         '200':
           description: OK
@@ -447,7 +448,10 @@ components:
       type: object
       properties:
         data:
-          $ref: '#/components/schemas/SmartData'
+          type: array
+          description: One entry per drive
+          items:
+            $ref: '#/components/schemas/SmartData'
         capture:
           $ref: '#/components/schemas/CaptureMetadata'
         errors:
@@ -511,6 +515,67 @@ components:
     SmartData:
       type: object
       properties:
+        device:
+          type: string
+          description: Device path passed to smartctl
+          example: "/dev/sda"
+        type:
+          type: string
+          description: smartctl device type
+          example: "sat"
+        protocol:
+          type: string
+          example: "ATA"
+        status:
+          type: string
+          enum: [ok, standby, unsupported, error]
+          description: standby means the disk was asleep and was not woken; unsupported means the device reports no SMART data; error means it could not be read (see errors)
+          example: "ok"
+        model_name:
+          type: string
+          example: "WDC WD40EFRX-68N32N0"
+        serial_number:
+          type: string
+          description: Identify drives by serial number rather than device path, which can change after a reboot
+          example: "WD-WX12345678"
+        firmware_version:
+          type: string
+          example: "82.00A82"
+        capacity_bytes:
+          type: integer
+          format: uint64
+          nullable: true
+          example: 4000787030016
+        warnings:
+          type: array
+          description: Health warnings from smartctl's exit status
+          items:
+            type: string
+            enum: [disk_failing, prefail_attribute_at_threshold, attribute_was_at_threshold, error_log_has_errors, self_test_log_has_errors]
+        reallocated_sectors:
+          type: integer
+          format: int64
+          nullable: true
+          description: ATA attribute 5, or the grown defect list for SAS drives
+          example: 0
+        pending_sectors:
+          type: integer
+          format: int64
+          nullable: true
+          description: ATA attribute 197
+          example: 0
+        offline_uncorrectable:
+          type: integer
+          format: int64
+          nullable: true
+          description: ATA attribute 198
+          example: 0
+        media_errors:
+          type: integer
+          format: int64
+          nullable: true
+          description: NVMe media and data integrity errors
+          example: 0
         available_spare:
           type: string
           example: "100%"

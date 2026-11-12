@@ -21,6 +21,7 @@ ProtectControlGroups=yes
 ## TODO: REPLACE WITH YOUR SECRET
 Environment="API_SECRET=your_secret_here"
 Environment="GIN_MODE=release"
+Environment="LISTEN=0.0.0.0"
 
 ## TODO: Replace with your user and group names
 User=user_name
