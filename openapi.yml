@@ -168,6 +168,27 @@ paths:
         - type: http
           scheme: bearer
           bearerFormat: JWT
+  /api/v1/metrics/raid:
+    get:
+      summary: Read software RAID (mdadm) data
+      description: Linux only. Returns an empty list on hosts without md arrays and on other platforms.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RaidMetricResponse'
+        '207':
+          description: Multi-Status | Some of the data is not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RaidMetricResponse'
+      security:
+        - type: http
+          scheme: bearer
+          bearerFormat: JWT
   /api/v1/metrics/docker:
     get:
       summary: Read Docker container metrics
@@ -220,6 +241,10 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/NetData'
+            raid:
+              type: array
+              items:
+                $ref: '#/components/schemas/RaidData'
         capture:
           $ref: '#/components/schemas/CaptureMetadata'
         errors:
@@ -593,6 +618,67 @@ components:
         unsafe_shutdowns:
           type: string
           example: "0"
+    RaidMetricResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RaidData'
+        capture:
+          $ref: '#/components/schemas/CaptureMetadata'
+        errors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MetricErrorObject'
+    RaidData:
+      type: object
+      properties:
+        device:
+          type: string
+          example: "/dev/md0"
+        level:
+          type: string
+          description: RAID level; empty while the array is inactive
+          example: "raid1"
+        state:
+          type: string
+          description: md array_state
+          example: "clean"
+        raid_disks:
+          type: integer
+          nullable: true
+          example: 2
+        degraded_disks:
+          type: integer
+          nullable: true
+          description: Missing members; 0 means healthy. Null for levels without redundancy (raid0, linear)
+          example: 0
+        sync_action:
+          type: string
+          nullable: true
+          description: idle, resync, recover, check, repair, reshape or frozen. Null for levels without redundancy
+          example: "idle"
+        sync_progress:
+          type: number
+          nullable: true
+          description: Progress of the running sync from 0 to 1; null when no sync is running
+          example: 0.25
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/RaidMember'
+    RaidMember:
+      type: object
+      properties:
+        device:
+          type: string
+          example: "/dev/sda1"
+        state:
+          type: string
+          description: md member state, e.g. in_sync, faulty, spare, write_mostly
+          example: "in_sync"
     DockerMetricResponse:
       type: object
       properties:

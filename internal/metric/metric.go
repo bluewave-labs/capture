@@ -49,6 +49,7 @@ type AllMetrics struct {
 	Disk   MetricsSlice `json:"disk"`
 	Host   HostData     `json:"host"`
 	Net    MetricsSlice `json:"net"`
+	Raid   MetricsSlice `json:"raid"`
 }
 
 func (a AllMetrics) isMetric() {}
@@ -129,6 +130,7 @@ func GetAllSystemMetrics() (AllMetrics, []CustomErr) {
 	disk, diskErr := CollectDiskMetrics()
 	host, hostErr := GetHostInformation()
 	net, netErr := GetNetInformation()
+	raid, raidErr := GetRaidMetrics()
 
 	var errors []CustomErr
 
@@ -152,11 +154,16 @@ func GetAllSystemMetrics() (AllMetrics, []CustomErr) {
 		errors = append(errors, netErr...)
 	}
 
+	if raidErr != nil {
+		errors = append(errors, raidErr...)
+	}
+
 	return AllMetrics{
 		CPU:    *cpu,
 		Memory: *memory,
 		Disk:   disk,
 		Host:   *host,
 		Net:    net,
+		Raid:   raid,
 	}, errors
 }
