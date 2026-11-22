@@ -41,15 +41,17 @@ jobs:
           go-version-file: 'go.mod'
       - name: Build capture binary
         run: go build -o dist/capture ./cmd/capture/
+      # -count=1: setup-go restores the Go build cache, which also holds test results;
+      # without it, a PR that changes no Go code reports cached results as passing.
       # The race detector needs cgo and a C compiler, which the Windows image does not
       # guarantee; it is not platform-specific, so the other three runners cover it.
       - name: Run unit and integration tests
         shell: bash
         run: |
           if [ "${RUNNER_OS}" = "Windows" ]; then
-            go test -v -timeout 3m ./...
+            go test -count=1 -v -timeout 3m ./...
           else
-            go test -race -v -timeout 3m ./...
+            go test -count=1 -race -v -timeout 3m ./...
           fi
 
   check:

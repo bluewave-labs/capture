@@ -26,7 +26,7 @@ jobs:
           go-version-file: 'go.mod'
       # A tag can point at any commit, so do not publish one that fails its tests
       - name: Run tests
-        run: go test -race -timeout 3m ./...
+        run: go test -count=1 -race -timeout 3m ./...
       # GoReleaser calls syft to generate the SBOMs
       - name: Install Syft
         uses: anchore/sbom-action/download-syft@v0
