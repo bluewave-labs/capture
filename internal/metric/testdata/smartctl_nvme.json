@@ -12,6 +12,12 @@
     "protocol": "NVMe"
   },
   "model_name": "Samsung SSD 980 PRO 1TB",
+  "serial_number": "S5GXNX0TEST001",
+  "firmware_version": "5B2QGXA7",
+  "user_capacity": {
+    "blocks": 1953525168,
+    "bytes": 1000204886016
+  },
   "smart_status": {
     "passed": true,
     "nvme": {
@@ -32,7 +38,7 @@
     "power_cycles": 412,
     "power_on_hours": 6120,
     "unsafe_shutdowns": 29,
-    "media_errors": 0,
+    "media_errors": 3,
     "num_err_log_entries": 0
   },
   "temperature": {

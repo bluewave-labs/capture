@@ -3,13 +3,19 @@ package config
 import "log"
 
 type Config struct {
+	Listen    string
 	Port      string
 	APISecret string
 }
 
 var defaultPort = "59232"
+var defaultListen = "0.0.0.0"
 
-func NewConfig(port string, apiSecret string) *Config {
+func NewConfig(port string, apiSecret string, listen string) *Config {
+	if listen == "" {
+		listen = defaultListen
+	}
+
 	// Set default port if not provided
 	if port == "" {
 		port = defaultPort
@@ -21,6 +27,7 @@ func NewConfig(port string, apiSecret string) *Config {
 	}
 
 	return &Config{
+		Listen:    listen,
 		Port:      port,
 		APISecret: apiSecret,
 	}
@@ -28,6 +35,7 @@ func NewConfig(port string, apiSecret string) *Config {
 
 func Default() *Config {
 	return &Config{
+		Listen:    defaultListen,
 		Port:      defaultPort,
 		APISecret: "",
 	}

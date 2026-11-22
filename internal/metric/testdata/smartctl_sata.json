@@ -12,6 +12,12 @@
     "protocol": "ATA"
   },
   "model_name": "WDC WD40EFRX-68N32N0",
+  "serial_number": "WD-TESTSERIAL0001",
+  "firmware_version": "82.00A82",
+  "user_capacity": {
+    "blocks": 7814037168,
+    "bytes": 4000787030016
+  },
   "smart_status": {
     "passed": true
   },
@@ -23,7 +29,9 @@
       {"id": 9, "name": "Power_On_Hours", "value": 52, "worst": 52, "thresh": 0, "raw": {"value": 35210, "string": "35210"}},
       {"id": 12, "name": "Power_Cycle_Count", "value": 100, "worst": 100, "thresh": 0, "raw": {"value": 87, "string": "87"}},
       {"id": 192, "name": "Power-Off_Retract_Count", "value": 200, "worst": 200, "thresh": 0, "raw": {"value": 41, "string": "41"}},
-      {"id": 194, "name": "Temperature_Celsius", "value": 116, "worst": 104, "thresh": 0, "raw": {"value": 34, "string": "34"}}
+      {"id": 194, "name": "Temperature_Celsius", "value": 116, "worst": 104, "thresh": 0, "raw": {"value": 34, "string": "34"}},
+      {"id": 197, "name": "Current_Pending_Sector", "value": 200, "worst": 200, "thresh": 0, "raw": {"value": 2, "string": "2"}},
+      {"id": 198, "name": "Offline_Uncorrectable", "value": 100, "worst": 253, "thresh": 0, "raw": {"value": 0, "string": "0"}}
     ]
   },
   "power_on_time": {

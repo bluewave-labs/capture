@@ -24,6 +24,7 @@ services:
     environment:
       - API_SECRET=REPLACE_WITH_YOUR_SECRET
       - GIN_MODE=release
+      - LISTEN=0.0.0.0
     volumes:
       - /etc/os-release:/etc/os-release:ro
     networks:
