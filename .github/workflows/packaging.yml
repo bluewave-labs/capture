@@ -33,6 +33,9 @@ jobs:
     name: release dry run
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      # The ko config needs a repository even for check; ko.local keeps images in the local daemon
+      KO_DOCKER_REPO: ko.local
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -57,8 +60,6 @@ jobs:
           distribution: goreleaser
           version: '~> v2'
           args: release --snapshot --clean
-        env:
-          KO_DOCKER_REPO: ko.local
       - name: Smoke test the linux/amd64 binary
         run: |
           binary=$(find dist -path '*linux_amd64*' -name capture -type f | head -n 1)

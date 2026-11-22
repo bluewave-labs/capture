@@ -46,9 +46,11 @@ jobs:
       - name: Run unit and integration tests
         shell: bash
         run: |
-          race="-race"
-          if [ "${RUNNER_OS}" = "Windows" ]; then race=""; fi
-          go test ${race} -v -timeout 3m ./...
+          if [ "${RUNNER_OS}" = "Windows" ]; then
+            go test -v -timeout 3m ./...
+          else
+            go test -race -v -timeout 3m ./...
+          fi
 
   check:
     runs-on: ubuntu-24.04
@@ -62,7 +64,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Install staticcheck
-        run: go install honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION}
+        run: go install "honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION}"
       - name: Install golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
