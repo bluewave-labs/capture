@@ -1,9 +1,12 @@
 package server
 
 import (
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/bluewave-labs/capture/internal/config"
 	"github.com/bluewave-labs/capture/internal/server/handler"
@@ -57,5 +60,51 @@ func TestNewServerListenAddress(t *testing.T) {
 				t.Errorf("server address = %q, want %q", srv.Addr, tt.want)
 			}
 		})
+	}
+}
+
+func TestServeReturnsBindError(t *testing.T) {
+	occupied, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer occupied.Close()
+	_, port, _ := net.SplitHostPort(occupied.Addr().String())
+
+	srv := NewServer(config.NewConfig(port, "test-secret", "127.0.0.1"), http.NewServeMux(), nil)
+	if err := srv.Serve(); err == nil {
+		srv.Stop(time.Second)
+		t.Fatalf("Serve on occupied port %s returned nil, want a bind error", port)
+	}
+}
+
+func TestServeAndStop(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
+	srv := NewServer(config.NewConfig("0", "test-secret", "127.0.0.1"), mux, nil)
+
+	if err := srv.Serve(); err != nil {
+		t.Fatalf("Serve returned %v", err)
+	}
+	if strings.HasSuffix(srv.Addr, ":0") {
+		t.Fatalf("Addr = %q, want the bound port", srv.Addr)
+	}
+
+	resp, err := http.Get("http://" + srv.Addr + "/health")
+	if err != nil {
+		t.Fatalf("request while serving failed: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status while serving = %d, want 200", resp.StatusCode)
+	}
+
+	// A normal stop must not end the process (the serve goroutine used to log.Fatalf here)
+	srv.Stop(time.Second)
+	time.Sleep(100 * time.Millisecond)
+
+	if resp, err := http.Get("http://" + srv.Addr + "/health"); err == nil {
+		resp.Body.Close()
+		t.Fatal("request after Stop succeeded, want connection refused")
 	}
 }

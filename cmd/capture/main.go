@@ -57,36 +57,44 @@ func main() {
 		os.Exit(0)
 	}
 
-	// A Windows service has no console, so logs go to the Windows Event Log instead
-	inService := isWindowsService()
-	if inService {
-		closeLog := redirectLogToEventLog()
-		defer closeLog()
+	// Under the Windows Service Control Manager, startServer runs only after the
+	// service has connected, so a startup error is reported to Windows as a stop
+	// with an error code instead of a process that never answered.
+	if isWindowsService() {
+		os.Exit(runService(startServer, shutdownTimeout))
 	}
 
-	appConfig = config.NewConfig(
+	srv, err := startServer()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	srv.GracefulShutdown(shutdownTimeout)
+}
+
+// startServer reads the configuration from the environment and starts serving.
+// It returns an error for invalid configuration or when the listen address cannot be bound.
+func startServer() (*server.Server, error) {
+	cfg, err := config.Load(
 		os.Getenv("PORT"),
 		os.Getenv("API_SECRET"),
 		os.Getenv("LISTEN"),
 	)
+	if err != nil {
+		return nil, err
+	}
+	appConfig = cfg
+
 	if err := metric.ConfigureSmartDevices(os.Getenv("SMART_DEVICES")); err != nil {
-		log.Fatalln(err)
+		return nil, err
 	}
 
 	srv := server.NewServer(appConfig, nil, &handler.CaptureMeta{
 		Version: Version,
 	})
-
-	if inService {
-		if err := runService(srv, shutdownTimeout); err != nil {
-			log.Fatalf("service failed: %v", err)
-		}
-		return
+	if err := srv.Serve(); err != nil {
+		return nil, err
 	}
 
 	log.Println("WARNING: Remember to add http://" + server.GetLocalIP() + ":" + appConfig.Port + "/api/v1/metrics to your Checkmate Infrastructure Dashboard. Without this endpoint, system metrics will not be displayed.")
-
-	srv.Serve()
-
-	srv.GracefulShutdown(shutdownTimeout)
+	return srv, nil
 }

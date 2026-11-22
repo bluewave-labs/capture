@@ -22,15 +22,24 @@ type Server struct {
 	MetaData *handler.CaptureMeta // Metadata can be used to store additional information about the server
 }
 
-// Serve function starts the HTTP server and listens for incoming requests concurrently.
-// It uses a goroutine to handle the server's ListenAndServe method, allowing the main thread to continue executing.
-func (s *Server) Serve() {
+// Serve binds the listen address, then serves requests in the background.
+// A bind failure, such as the port already being in use, is returned rather than
+// logged later, so the caller knows whether the server actually started.
+// On success s.Addr holds the bound address, which matters when the port is 0.
+func (s *Server) Serve() error {
+	listener, err := net.Listen("tcp", s.Addr)
+	if err != nil {
+		return err
+	}
+	s.Addr = listener.Addr().String()
+
 	go func() {
-		if err := s.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := s.Server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("server error: %v", err)
 		}
 	}()
 	log.Printf("server started on %s", s.Addr)
+	return nil
 }
 
 // GracefulShutdown waits for an interrupt or terminate signal, then stops the server.
@@ -44,7 +53,7 @@ func (s *Server) GracefulShutdown(timeout time.Duration) {
 	s.Stop(timeout)
 }
 
-// Stop gracefully shuts down the server with a timeout.
+// Stop gracefully shuts down the server, closing any connections still open after the timeout.
 func (s *Server) Stop(timeout time.Duration) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -52,6 +61,7 @@ func (s *Server) Stop(timeout time.Duration) {
 	log.Println("shutting down server...")
 	if err := s.Shutdown(ctx); err != nil {
 		log.Printf("server shutdown error: %v", err)
+		_ = s.Close()
 	} else {
 		log.Println("server shutdown gracefully")
 	}

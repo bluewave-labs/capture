@@ -13,12 +13,7 @@ func isWindowsService() bool {
 	return false
 }
 
-// redirectLogToEventLog is a no-op outside Windows.
-func redirectLogToEventLog() func() {
-	return func() {}
-}
-
-// runService is a no-op outside Windows.
-func runService(_ *server.Server, _ time.Duration) error {
-	return nil
+// runService is never called outside Windows, since isWindowsService is always false.
+func runService(_ func() (*server.Server, error), _ time.Duration) int {
+	return 1
 }
