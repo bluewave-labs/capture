@@ -17,13 +17,16 @@ permissions:
   contents: read
 
 env:
-  STATICCHECK_VERSION: v0.7.0
+  # Keep in sync with the Justfile
+  STATICCHECK_VERSION: v0.8.2
   GOLANGCI_LINT_VERSION: v2.15.0
+  GOVULNCHECK_VERSION: v1.10.0
 
 jobs:
   test:
     name: test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -38,11 +41,22 @@ jobs:
           go-version-file: 'go.mod'
       - name: Build capture binary
         run: go build -o dist/capture ./cmd/capture/
+      # -count=1: setup-go restores the Go build cache, which also holds test results;
+      # without it, a PR that changes no Go code reports cached results as passing.
+      # The race detector needs cgo and a C compiler, which the Windows image does not
+      # guarantee; it is not platform-specific, so the other three runners cover it.
       - name: Run unit and integration tests
-        run: go test -v -timeout 60s ./test/... ./internal/...
+        shell: bash
+        run: |
+          if [ "${RUNNER_OS}" = "Windows" ]; then
+            go test -count=1 -v -timeout 3m ./...
+          else
+            go test -count=1 -race -v -timeout 3m ./...
+          fi
 
   check:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -52,12 +66,17 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Install staticcheck
-        run: go install honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION}
+        run: go install "honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION}"
       - name: Install golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           install-only: true
+      # golangci-lint run does not report formatting, so check it separately
+      - name: Check formatting
+        run: golangci-lint fmt --diff
+      - name: Check go.mod and go.sum are tidy
+        run: go mod tidy -diff
       # Platform-specific files (build tags) are only checked when GOOS matches
       - name: Run linters for each target OS
         run: |
@@ -68,3 +87,10 @@ jobs:
             GOOS="${goos}" golangci-lint run
             echo "::endgroup::"
           done
+      # Releases include 32-bit ARM, where int is 32 bits; catch overflowing constants before a tag
+      - name: Vet 32-bit ARM
+        run: GOOS=linux GOARCH=arm GOARM=6 go vet ./...
+      - name: Check for vulnerabilities
+        run: |
+          go run "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}" -format json ./... > govulncheck.json
+          ./.github/scripts/govulncheck-gate.sh govulncheck.json
