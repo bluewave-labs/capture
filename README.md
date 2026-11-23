@@ -167,7 +167,7 @@ Docker options explained:
 - `-v /etc/os-release:/etc/os-release:ro`: Platform detection
 - `-p 59232:59232`: Port mapping
 - `-e API_SECRET`: Required authentication key
-- `-e GIN_MODE=release`: Production logging. Without it the image currently logs in debug mode
+- `-e GIN_MODE=release`: Production logging. Images up to v2.0.0 run in debug mode without it; later releases default to release mode
 - `-d`: Detached mode
 
 #### Docker container metrics
