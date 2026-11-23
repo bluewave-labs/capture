@@ -1,0 +1,65 @@
+name: release-latest
+
+# Moves the container image's "latest" tag when a release is published, not when its
+# tag is pushed. release.yml pushes only ghcr.io/bluewave-labs/capture:vX.Y.Z and leaves
+# the GitHub release as a draft, so Docker and Helm users (the chart defaults to
+# "latest") get a version only once its release notes are public.
+#
+# A release published with the workflow's own GITHUB_TOKEN does not trigger this
+# workflow. Releases are published by a maintainer, so that does not happen; to move
+# "latest" by hand, run this workflow with the release tag.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published release tag to mark as latest, e.g. v2.0.0
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: release-latest
+  cancel-in-progress: false
+
+jobs:
+  latest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      IMAGE: ghcr.io/bluewave-labs/capture
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      # Publishing an older patch release, or a prerelease, must not move "latest" backwards.
+      # Without a tag, gh release view returns the newest published, non-prerelease release.
+      - name: Check that this is the latest release
+        id: check
+        run: |
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$TAG' is not a release tag like v1.2.3"
+            exit 1
+          fi
+          latest=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
+          if [ "$latest" = "$TAG" ]; then
+            echo "move=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::$TAG is not the latest release ($latest), so the latest image tag stays where it is"
+            echo "move=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Log in to ghcr.io
+        if: steps.check.outputs.move == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      # Copies the multi-arch manifest to the new tag without pulling or rebuilding
+      - name: Point latest at the release image
+        if: steps.check.outputs.move == 'true'
+        run: |
+          docker buildx imagetools create --tag "$IMAGE:latest" "$IMAGE:$TAG"
+          docker buildx imagetools inspect "$IMAGE:latest"
