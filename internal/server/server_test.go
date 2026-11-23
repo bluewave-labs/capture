@@ -123,3 +123,22 @@ func TestListenAddrForLog(t *testing.T) {
 		}
 	}
 }
+
+func TestDefaultToReleaseMode(t *testing.T) {
+	previous := gin.Mode()
+	t.Cleanup(func() { gin.SetMode(previous) })
+
+	t.Setenv(gin.EnvGinMode, "")
+	gin.SetMode(gin.DebugMode)
+	DefaultToReleaseMode()
+	if gin.Mode() != gin.ReleaseMode {
+		t.Errorf("mode with GIN_MODE unset = %q, want %q", gin.Mode(), gin.ReleaseMode)
+	}
+
+	t.Setenv(gin.EnvGinMode, gin.DebugMode)
+	gin.SetMode(gin.DebugMode)
+	DefaultToReleaseMode()
+	if gin.Mode() != gin.DebugMode {
+		t.Errorf("mode with GIN_MODE=debug = %q, want %q", gin.Mode(), gin.DebugMode)
+	}
+}
