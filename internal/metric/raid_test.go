@@ -213,6 +213,7 @@ func TestParseSyncCompleted(t *testing.T) {
 		{"0 / 0", nil},
 		{"500 / 1000", floatPtr(0.5)},
 		{"1000 / 1000", floatPtr(1)},
+		{"1048704 / 1048576", floatPtr(1)},
 	}
 	for _, tt := range tests {
 		got := parseSyncCompleted(tt.value)

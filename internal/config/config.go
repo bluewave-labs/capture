@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"log"
+	"strings"
 )
 
 type Config struct {
@@ -19,7 +20,8 @@ var ErrMissingAPISecret = errors.New("API_SECRET environment variable is require
 
 // Load builds the configuration, filling in defaults, and reports invalid values as an error.
 func Load(port string, apiSecret string, listen string) (*Config, error) {
-	if apiSecret == "" {
+	// A secret of only whitespace is as good as none. A real secret is used as given, not trimmed.
+	if strings.TrimSpace(apiSecret) == "" {
 		return nil, ErrMissingAPISecret
 	}
 	if listen == "" {
