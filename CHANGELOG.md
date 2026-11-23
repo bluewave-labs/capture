@@ -4,6 +4,26 @@
 
 Date-Format: YYYY-MM-DD
 
+## 2.0.1 (2026-11-23)
+
+**The Docker image now runs in release mode by default.** This patch release fixes the v2.0.0 image starting in debug mode and brings the README up to date for 2.0. It changes the agent only; Checkmate needs no update.
+
+### Fixes
+
+- Capture runs in release mode when `GIN_MODE` is not set, as documented. The v2.0.0 Docker image ran in debug mode, reported `"mode": "debug"` and logged Gin's debug output. Setting `GIN_MODE=debug` still turns debug mode on
+
+### Upgrade notes
+
+- No new environment variables. If you added `GIN_MODE=release` to work around the v2.0.0 image, you can keep it or remove it
+- Docker container metrics need access to the Docker socket. The image runs as a non-root user, so mount `/var/run/docker.sock` and add the socket's group with `--group-add`. The README has the full command
+- `go install github.com/bluewave-labs/capture/cmd/capture@latest` still installs 1.4.0. Use the release binaries, the install scripts or the Docker image for 2.x
+
+### Maintenance
+
+- README updated for 2.0: platform support table, Docker container metrics setup, how to pin an image version, using Capture with Checkmate, and the S.M.A.R.T. response change
+
+**Full Changelog**: https://github.com/bluewave-labs/capture/compare/v2.0.0...v2.0.1
+
 ## 2.0.0 (2026-11-22)
 
 **Per-drive SMART health, software RAID monitoring and a Windows service that starts lead this release.** SMART data now comes back as one entry per drive, which is a breaking change for anything that reads `/api/v1/metrics/smart`. Checkmate does not read that endpoint, so current Checkmate versions keep working with this release.
