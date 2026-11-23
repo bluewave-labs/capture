@@ -423,6 +423,8 @@ A PowerShell install script is provided at [`deployment/windows/install.ps1`](./
     Restart-Service capture
     ```
 
+6. If the port is taken or the `-Listen` address does not exist yet (for example at boot, before DHCP assigns it), the service waits in *Start pending* and retries for up to 60 seconds. A configuration error, or a port that is still unavailable after that, stops the service with an error in the Windows Event Log (Application log, source `capture`).
+
 ### Reverse Proxy and SSL
 
 You can use a reverse proxy in front of the Capture service to handle HTTPS requests and SSL termination.

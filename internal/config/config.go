@@ -1,6 +1,9 @@
 package config
 
-import "log"
+import (
+	"errors"
+	"log"
+)
 
 type Config struct {
 	Listen    string
@@ -11,26 +14,34 @@ type Config struct {
 var defaultPort = "59232"
 var defaultListen = "0.0.0.0"
 
-func NewConfig(port string, apiSecret string, listen string) *Config {
+// ErrMissingAPISecret is returned by Load when no API secret is configured.
+var ErrMissingAPISecret = errors.New("API_SECRET environment variable is required for security purposes; set it before starting the server")
+
+// Load builds the configuration, filling in defaults, and reports invalid values as an error.
+func Load(port string, apiSecret string, listen string) (*Config, error) {
+	if apiSecret == "" {
+		return nil, ErrMissingAPISecret
+	}
 	if listen == "" {
 		listen = defaultListen
 	}
-
-	// Set default port if not provided
 	if port == "" {
 		port = defaultPort
 	}
-
-	// Print error message if API_SECRET is not provided
-	if apiSecret == "" {
-		log.Fatalln("API_SECRET environment variable is required for security purposes. Please set it before starting the server.")
-	}
-
 	return &Config{
 		Listen:    listen,
 		Port:      port,
 		APISecret: apiSecret,
+	}, nil
+}
+
+// NewConfig is Load for callers that cannot handle an error: it exits the process instead.
+func NewConfig(port string, apiSecret string, listen string) *Config {
+	config, err := Load(port, apiSecret, listen)
+	if err != nil {
+		log.Fatalln(err)
 	}
+	return config
 }
 
 func Default() *Config {

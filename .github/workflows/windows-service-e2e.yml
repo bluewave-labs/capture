@@ -1,0 +1,45 @@
+name: windows-service
+
+# Installs Capture as a real Windows service and checks how the Service Control
+# Manager sees start, stop and startup failures.
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - .github/workflows/windows-service-e2e.yml
+      - .github/workflows/windows-service-e2e.ps1
+      - cmd/capture/**
+      - internal/config/**
+      - internal/server/**
+      - deployment/windows/**
+      - go.mod
+      - go.sum
+
+permissions:
+  contents: read
+
+jobs:
+  service:
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Build
+        shell: pwsh
+        run: go build -o "$env:RUNNER_TEMP\capture.exe" ./cmd/capture
+      - name: Run service scenarios
+        shell: pwsh
+        run: ./.github/workflows/windows-service-e2e.ps1 -Binary "$env:RUNNER_TEMP\capture.exe"
+      - name: Upload binary for manual testing
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capture-windows-amd64
+          path: ${{ runner.temp }}\capture.exe
+          retention-days: 14

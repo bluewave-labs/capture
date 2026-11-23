@@ -129,8 +129,23 @@ Set-ItemProperty `
     -Value @("API_SECRET=$APISecret", "PORT=$Port", "LISTEN=$Listen", "GIN_MODE=release") `
     -Type  MultiString
 
-# Start or restart the service (Restart-Service starts it if stopped, restarts if running)
-Restart-Service -Name $ServiceName -Force
+# Restart the service automatically if it crashes (after 5s, 10s, then every 30s).
+# A configuration error stops the service with an error code instead, which is not retried.
+# sc.exe is a native command, so its exit code is checked explicitly.
+& sc.exe failure $ServiceName reset= 86400 actions= restart/5000/restart/10000/restart/30000 | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning "Could not set automatic restart for service '$ServiceName' (sc.exe exit code $LASTEXITCODE)."
+}
+
+# Start or restart the service (Restart-Service starts it if stopped, restarts if running).
+# Write-Host is used for the error because Write-Error throws under ErrorActionPreference Stop.
+try {
+    Restart-Service -Name $ServiceName -Force
+} catch {
+    Write-Host "Service '$ServiceName' failed to start: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Check Event Viewer > Windows Logs > Application for errors from source 'capture'." -ForegroundColor Red
+    exit 1
+}
 Write-Host "Service status: $((Get-Service -Name $ServiceName).Status)"
 
 Write-Host ""
