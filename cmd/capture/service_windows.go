@@ -155,10 +155,11 @@ func (s *captureService) waitOrStop(requests <-chan svc.ChangeRequest, status ch
 		case <-timer.C:
 			return false
 		case request := <-requests:
-			switch request.Cmd {
-			case svc.Interrogate:
+			if request.Cmd == svc.Interrogate {
 				status <- request.CurrentStatus
-			case svc.Stop, svc.Shutdown:
+				continue
+			}
+			if request.Cmd == svc.Stop || request.Cmd == svc.Shutdown {
 				status <- svc.Status{State: svc.StopPending}
 				return true
 			}

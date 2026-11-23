@@ -43,7 +43,7 @@ func runExecute(startErrs []error, window time.Duration, requests chan svc.Chang
 				return nil, startErrs[calls-1]
 			}
 			close(started)
-			return &server.Server{Server: &http.Server{}}, nil
+			return &server.Server{Server: &http.Server{ReadHeaderTimeout: time.Second}}, nil
 		},
 		shutdownTimeout:   time.Second,
 		bindRetryWindow:   window,
