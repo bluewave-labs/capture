@@ -143,7 +143,8 @@ func parseSyncCompleted(value string) *float64 {
 	if doneErr != nil || totalErr != nil || total == 0 {
 		return nil
 	}
-	progress := float64(done) / float64(total)
+	// The kernel's counter can briefly pass the total, e.g. around a reshape; the API promises 0 to 1
+	progress := min(float64(done)/float64(total), 1)
 	return &progress
 }
 

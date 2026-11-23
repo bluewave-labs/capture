@@ -15,6 +15,8 @@ func TestLoad(t *testing.T) {
 		{"defaults", "", "secret", "", "59232", "0.0.0.0", nil},
 		{"explicit values", "8080", "secret", "127.0.0.1", "8080", "127.0.0.1", nil},
 		{"missing API secret", "8080", "", "", "", "", ErrMissingAPISecret},
+		{"whitespace API secret", "8080", " \t ", "", "", "", ErrMissingAPISecret},
+		{"API secret with spaces kept as given", "", " secret ", "", "59232", "0.0.0.0", nil},
 	}
 
 	for _, tt := range tests {

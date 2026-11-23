@@ -27,7 +27,8 @@ type Server struct {
 // logged later, so the caller knows whether the server actually started.
 // On success s.Addr holds the bound address, which matters when the port is 0.
 func (s *Server) Serve() error {
-	listener, err := net.Listen("tcp", s.Addr)
+	configured := s.Addr
+	listener, err := net.Listen("tcp", configured)
 	if err != nil {
 		return err
 	}
@@ -38,8 +39,23 @@ func (s *Server) Serve() error {
 			log.Fatalf("server error: %v", err)
 		}
 	}()
-	log.Printf("server started on %s", s.Addr)
+	log.Printf("server started on %s", listenAddrForLog(configured, s.Addr))
 	return nil
+}
+
+// listenAddrForLog combines the configured host with the bound port. The bound address alone
+// can mislead: Go binds 0.0.0.0 as the dual-stack wildcard [::], which reads as IPv6 only.
+// The bound port still matters when the configured port is 0.
+func listenAddrForLog(configured, bound string) string {
+	host, _, err := net.SplitHostPort(configured)
+	if err != nil {
+		return bound
+	}
+	_, port, err := net.SplitHostPort(bound)
+	if err != nil {
+		return bound
+	}
+	return net.JoinHostPort(host, port)
 }
 
 // GracefulShutdown waits for an interrupt or terminate signal, then stops the server.

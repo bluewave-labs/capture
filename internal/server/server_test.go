@@ -109,3 +109,17 @@ func TestServeAndStop(t *testing.T) {
 		t.Fatal("request after Stop succeeded, want connection refused")
 	}
 }
+
+func TestListenAddrForLog(t *testing.T) {
+	tests := []struct{ configured, bound, want string }{
+		{"0.0.0.0:59232", "[::]:59232", "0.0.0.0:59232"},
+		{"127.0.0.1:0", "127.0.0.1:51234", "127.0.0.1:51234"},
+		{"[::1]:8080", "[::1]:8080", "[::1]:8080"},
+		{"not-an-address", "[::]:59232", "[::]:59232"},
+	}
+	for _, tt := range tests {
+		if got := listenAddrForLog(tt.configured, tt.bound); got != tt.want {
+			t.Errorf("listenAddrForLog(%q, %q) = %q, want %q", tt.configured, tt.bound, got, tt.want)
+		}
+	}
+}
