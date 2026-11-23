@@ -9,7 +9,6 @@
 ![github-issues](https://img.shields.io/github/issues/bluewave-labs/capture)
 [![go-reference](https://pkg.go.dev/badge/github.com/bluewave-labs/capture.svg)](https://pkg.go.dev/github.com/bluewave-labs/capture)
 [![github-actions-go](https://github.com/bluewave-labs/capture/actions/workflows/go.yml/badge.svg)](https://github.com/bluewave-labs/capture/actions/workflows/go.yml)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/bluewave-labs/capture)
 
 <h1 align="center"><a href="https://bluewavelabs.ca" target="_blank">Capture</a></h1>
 
@@ -18,11 +17,13 @@
 Capture is a hardware monitoring agent that collects hardware information from the host machine and exposes it through a RESTful API. The agent is designed to be lightweight and easy to use.
 
 - [Features](#features)
+  - [Platform support](#platform-support)
 - [Quick Start (Docker)](#quick-start-docker)
 - [Quick Start (Docker Compose)](#quick-start-docker-compose)
 - [Configuration](#configuration)
 - [Installation Options](#installation-options)
   - [Docker (Recommended)](#docker-recommended)
+    - [Docker container metrics](#docker-container-metrics)
   - [Helm](#helm)
   - [System Installation](#system-installation)
   - [Linux Systemd Service](#linux-systemd-service)
@@ -30,6 +31,7 @@ Capture is a hardware monitoring agent that collects hardware information from t
   - [Windows Service](#windows-service)
   - [Reverse Proxy and SSL](#reverse-proxy-and-ssl)
     - [Caddy](#caddy)
+- [Using Capture with Checkmate](#using-capture-with-checkmate)
 - [Endpoints](#endpoints)
 - [API Documentation](#api-documentation)
 - [Contributing](#contributing)
@@ -58,8 +60,19 @@ Capture is a hardware monitoring agent that collects hardware information from t
   - Array state and missing disks
   - Rebuild progress
   - Member disk state
-- Docker Container Monitoring
-- GPU Monitoring (coming soon)
+- Docker Container Monitoring (needs access to the Docker socket; see [Docker container metrics](#docker-container-metrics))
+
+### Platform support
+
+| Metric | Linux | macOS | Windows |
+| ------ | ----- | ----- | ------- |
+| CPU, memory, disk, network, host | ✅ | ✅ | ✅ |
+| CPU temperature | ✅ | ❌ | ✅ where the machine exposes ACPI thermal zones |
+| S.M.A.R.T. | ✅ | ✅ | ✅ |
+| Software RAID (mdadm) | ✅ | ❌ | ❌ |
+| Docker containers | ✅ | ✅ | ✅ |
+
+S.M.A.R.T. needs smartmontools 7.0 or newer on the host, so it works with a system installation but not in the Docker image.
 
 ## Quick Start (Docker)
 
@@ -68,8 +81,11 @@ docker run -d \
     -v /etc/os-release:/etc/os-release:ro \
     -p 59232:59232 \
     -e API_SECRET=your-secret-key \
+    -e GIN_MODE=release \
     ghcr.io/bluewave-labs/capture:latest
 ```
+
+To include Docker container metrics, see [Docker container metrics](#docker-container-metrics).
 
 ## Quick Start (Docker Compose)
 
@@ -88,6 +104,10 @@ services:
       - LISTEN=0.0.0.0
     volumes:
       - /etc/os-release:/etc/os-release:ro
+      # Optional, for Docker container metrics. See "Docker container metrics" below.
+      # - /var/run/docker.sock:/var/run/docker.sock:ro
+    # group_add:
+    #   - "999" # group ID of /var/run/docker.sock on the host: stat -c '%g' /var/run/docker.sock
 ```
 
 ## Configuration
@@ -127,8 +147,13 @@ docker run -d \
     -v /etc/os-release:/etc/os-release:ro \
     -p 59232:59232 \
     -e API_SECRET=your-secret-key \
+    -e GIN_MODE=release \
     ghcr.io/bluewave-labs/capture:latest
 ```
+
+Image tags: `latest` points at the newest published release and moves only when a release is published. To choose when you upgrade, use a version tag instead, for example `ghcr.io/bluewave-labs/capture:v2.0.0`. Images are published for `linux/amd64` and `linux/arm64`.
+
+S.M.A.R.T. is not available in the Docker image, because it needs smartctl and direct access to the drives. Use a [system installation](#system-installation) if you need drive health.
 
 Or build locally:
 
@@ -142,7 +167,27 @@ Docker options explained:
 - `-v /etc/os-release:/etc/os-release:ro`: Platform detection
 - `-p 59232:59232`: Port mapping
 - `-e API_SECRET`: Required authentication key
+- `-e GIN_MODE=release`: Production logging. Images up to v2.0.0 run in debug mode without it; later releases default to release mode
 - `-d`: Detached mode
+
+#### Docker container metrics
+
+`/api/v1/metrics/docker` reads from the Docker API, so the container needs the Docker socket. The image runs as a non-root user, so also give it the socket's group:
+
+```shell
+docker run -d \
+    -v /etc/os-release:/etc/os-release:ro \
+    -v /var/run/docker.sock:/var/run/docker.sock:ro \
+    --group-add $(stat -c '%g' /var/run/docker.sock) \
+    -p 59232:59232 \
+    -e API_SECRET=your-secret-key \
+    -e GIN_MODE=release \
+    ghcr.io/bluewave-labs/capture:latest
+```
+
+On Docker Desktop (macOS and Windows) the socket's group inside containers is `0`, so use `--group-add 0`. Without the group, the endpoint returns a `permission denied` error.
+
+Access to the Docker socket gives control over the Docker host. Only mount it on hosts where you need container metrics.
 
 ### Helm
 
@@ -154,7 +199,7 @@ You can deploy Capture on a Kubernetes cluster using the provided Helm chart.
     cd deployment/helm/capture
     ```
 
-2. Customize `values.yaml` and set your `API_SECRET`.
+2. Customize `values.yaml` and set your `API_SECRET`. The chart uses the `latest` image by default; set `image.tag` (for example `v2.0.0`) to pin a version.
 
 3. Install the chart:
 
@@ -170,16 +215,10 @@ Choose one of these methods:
 
 1. **Pre-built Binaries**: Download from [GitHub Releases](https://github.com/bluewave-labs/capture/releases)
 
-2. **Go Package**:
+2. **Build from Source**:
 
    ```shell
-   go install github.com/bluewave-labs/capture/cmd/capture@latest
-   ```
-
-3. **Build from Source**:
-
-   ```shell
-   git clone git@github.com:bluewave-labs/capture
+   git clone https://github.com/bluewave-labs/capture.git
    cd capture
    just build   # or: go build -o dist/capture ./cmd/capture/
    ```
@@ -253,6 +292,8 @@ If you prefer to configure the service manually, a template service file is prov
     ```shell
     nano deployment/linux/capture.service
     ```
+
+    S.M.A.R.T. usually needs root to read the drives. The install script runs the service as root; if you set a different `User`, `/api/v1/metrics/smart` may return permission errors.
 
 2. Copy it to the systemd unit directory:
 
@@ -343,6 +384,8 @@ If you prefer to configure the service manually, a template plist is provided at
     ```shell
     nano deployment/macos/capture.plist
     ```
+
+    The install script runs the daemon as root. If you set a different `UserName`, S.M.A.R.T. may not be able to read every drive.
 
 2. Copy it to the launchd daemon directory and set the required permissions:
 
@@ -455,6 +498,16 @@ Start the Caddy reverse proxy
 docker compose -f caddy.compose.yml up -d
 ```
 
+## Using Capture with Checkmate
+
+[Checkmate](https://github.com/bluewave-labs/checkmate) shows Capture's data in its infrastructure monitors.
+
+1. Install and start Capture on the machine you want to monitor.
+2. In Checkmate, create an infrastructure monitor with the URL `http://<capture-host>:59232/api/v1/metrics` and the same secret as `API_SECRET`. The [Checkmate guide](https://docs.checkmate.so/users-guide/infrastructure-monitor#step-2-configure-general-settings) has the details.
+3. Make sure Checkmate can reach Capture's port. If Capture uses `LISTEN=127.0.0.1`, only local connections work.
+
+Checkmate currently shows CPU, memory, disk, network and host data. S.M.A.R.T. and software RAID data from Capture 2.0 are not shown in Checkmate yet.
+
 ## Endpoints
 
 - **Base URL**: `http://<host>:<PORT>` (default port `59232`)
@@ -468,7 +521,7 @@ docker compose -f caddy.compose.yml up -d
 | `GET`  | `/api/v1/metrics/memory` | ✅   | Memory totals and usage metrics.                                                                    |                                                |
 | `GET`  | `/api/v1/metrics/disk`   | ✅   | Disk capacity, inode usage, and IO stats.                                                           |                                                |
 | `GET`  | `/api/v1/metrics/host`   | ✅   | Host metadata (OS, uptime, kernel, etc.).                                                           |                                                |
-| `GET`  | `/api/v1/metrics/smart`  | ✅   | S.M.A.R.T. health, one entry per drive.                                                             | Identify drives by `serial_number`; device paths can change after a reboot. |
+| `GET`  | `/api/v1/metrics/smart`  | ✅   | S.M.A.R.T. health, one entry per drive.                                                             | Since v2.0.0 `data` is a list (before: one object). Identify drives by `serial_number`; device paths can change after a reboot. |
 | `GET`  | `/api/v1/metrics/net`    | ✅   | Interface-level network throughput.                                                                 |                                                |
 | `GET`  | `/api/v1/metrics/raid`   | ✅   | Software RAID (mdadm) array state, missing disks, rebuild progress, and member state.               | Linux only; empty list when there are no arrays. |
 | `GET`  | `/api/v1/metrics/docker` | ✅   | Docker container metrics.                                                                           | Use `?all=true` to include stopped containers. |
@@ -478,10 +531,10 @@ All responses share the same envelope:
 ```jsonc
 {
   "data": {
-    // collector-specific payload
+    // collector-specific payload: an object, or a list for smart, raid and docker
   },
   "capture": {
-    "version": "1.0.0",
+    "version": "2.0.0",
     "mode": "release"
   },
   "errors": [
@@ -496,7 +549,7 @@ Collectors can partially fail; when that happens the API responds with HTTP `207
 
 Our API is documented in accordance with the OpenAPI spec.
 
-You can find the OpenAPI specifications [in openapi.yml](https://github.com/bluewave-labs/capture/blob/develop/openapi.yml)
+You can find the OpenAPI specifications [in openapi.yml](https://github.com/bluewave-labs/capture/blob/main/openapi.yml)
 
 ## Contributing
 

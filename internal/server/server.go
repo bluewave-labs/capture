@@ -83,6 +83,15 @@ func (s *Server) Stop(timeout time.Duration) {
 	}
 }
 
+// DefaultToReleaseMode puts Gin in release mode unless GIN_MODE is set. Gin itself falls back
+// to debug mode, which the README does not document, and the published container image
+// (built by ko, not the Dockerfile) does not set GIN_MODE.
+func DefaultToReleaseMode() {
+	if os.Getenv(gin.EnvGinMode) == "" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+}
+
 func InitializeHandler(config *config.Config, metadata *handler.CaptureMeta) http.Handler {
 	// Initialize the Gin with default middlewares
 	r := gin.Default()

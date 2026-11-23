@@ -42,6 +42,8 @@ var (
 )
 
 func main() {
+	server.DefaultToReleaseMode()
+
 	showVersion := flag.Bool("version", false, "Display the version of the capture")
 	flag.Parse()
 
