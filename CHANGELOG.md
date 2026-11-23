@@ -4,6 +4,57 @@
 
 Date-Format: YYYY-MM-DD
 
+## 2.0.0 (2026-11-22)
+
+**Per-drive SMART health, software RAID monitoring and a Windows service that starts lead this release.** SMART data now comes back as one entry per drive, which is a breaking change for anything that reads `/api/v1/metrics/smart`. Checkmate does not read that endpoint, so current Checkmate versions keep working with this release.
+
+### Breaking changes
+
+- `GET /api/v1/metrics/smart` returns `data` as a list with one entry per drive, instead of one object for the whole host. The existing fields keep their names and formats. Scripts and integrations that read this endpoint need updating
+
+### Features
+
+- SMART data for every NVMe, SATA and SAS drive, with model, serial number, firmware, capacity and a status per drive (`ok`, `standby`, `unsupported` or `error`). Use the serial number to track a drive, since device paths can change after a reboot
+- SMART sector error counts per drive: reallocated, pending and offline uncorrectable sectors, and NVMe media errors. A count the drive does not report is `null`, never 0
+- SMART warnings from smartctl, such as a failing drive, an attribute at its threshold, or errors in the drive's error or self-test log
+- `SMART_DEVICES` sets the device type for drives that `smartctl --scan` gets wrong or misses, for example `/dev/sdb:sat` for a drive in a USB enclosure
+- Software RAID (mdadm) monitoring on Linux: `/api/v1/metrics/raid`, also included in `/api/v1/metrics`, reports each array's level, state, missing disks, rebuild progress and member disks
+- `LISTEN` sets the address Capture binds to, for example `127.0.0.1` to accept local connections only. The install scripts take it as `--listen` on Linux and macOS and `-Listen` on Windows
+- macOS install script that sets Capture up as a launchd service
+
+### Fixes
+
+- The Windows service created by `install.ps1` now starts. Before, Windows stopped it after the start timeout
+- Windows service: a configuration error stops the service with an error in the Windows Event Log. If the port is busy or the `-Listen` address does not exist yet at boot, Capture retries for up to 60 seconds before giving up
+- SMART data is read from SATA drives. Before, only NVMe drives returned data, and every SATA drive returned an `exit status 2` error
+- A drive that stops responding, often one behind a USB bridge, no longer blocks `/api/v1/metrics/smart`. smartctl times out after 20 seconds, that drive is reported as an error, and the other drives are still read
+- Docker metrics are collected from all containers in parallel, so hosts with many containers no longer time out after the first few
+- Unsupported HTTP methods on known routes return 405 instead of 404
+- An `API_SECRET` of only spaces is rejected at startup, the same as an empty one
+- The startup log shows the configured address, `0.0.0.0:59232`, instead of `[::]:59232`
+
+### Upgrade notes
+
+- New optional environment variables: `LISTEN` (default `0.0.0.0`) and `SMART_DEVICES`. No new required environment variables
+- SMART needs smartmontools 7.0 or newer and, on most systems, Capture running as root. SMART is not available in the Docker image
+- The sample systemd unit moved from `deployment/systemd/capture.service` to `deployment/linux/capture.service`
+- Windows: re-run `install.ps1` to upgrade. It replaces the existing service, keeping the same name
+- The Docker image's `latest` tag now moves when a release is published, not when its tag is pushed. Use a version tag such as `v2.0.0` to choose when you upgrade
+
+### Maintenance
+
+- Built with Go 1.27
+- Dependencies updated, including gin 1.12, the Docker client 28.5.2, gopsutil 4.26.10 and OpenTelemetry 1.45. quic-go raised to 0.59.1 to clear a known vulnerability
+- CI runs the full test suite with the race detector on Linux (x86 and ARM), macOS and Windows, and adds a vulnerability check, formatting and module checks, a release dry run and an end-to-end test of the Windows service
+- Dependabot opens one grouped update per ecosystem per week
+
+### New Contributors
+* @fabiangigler made their first contribution in https://github.com/bluewave-labs/capture/pull/159
+* @gorkem-bwl made their first contribution in https://github.com/bluewave-labs/capture/pull/163
+* @beachmachine made their first contribution in https://github.com/bluewave-labs/capture/pull/164
+
+**Full Changelog**: https://github.com/bluewave-labs/capture/compare/v1.4.0...v2.0.0
+
 ## 1.4.0 (2026-03-13)
 
 This release improves the data you get from Capture and makes it more reliable. Disk metrics now include `mountpoint`, LVM disks are detected more accurately, and ZFS I/O reporting is improved. Docker metrics now include runtime stats such as CPU, memory, network, block I/O, and PIDs, and the API/OpenAPI docs are updated to match these responses. Test coverage and dependency updates were also improved to reduce regressions.
