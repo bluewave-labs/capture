@@ -1,56 +1,125 @@
-# Release Process for Capture
+# Release process for Capture
 
-This document outlines the steps to create a new release for the Capture.
+Releases are cut from `develop`, merged into `main`, and published from a version
+tag `vX.Y.Z` (for example `v2.0.0`). Versions follow [semantic versioning](https://semver.org):
+a change to an existing API response shape is a major version.
 
-You must follow these steps to ensure a smooth release process.
+## What publishes what
 
-- Tag Pattern: `v{0-9}.{0-9}.{0-9}`
-  - Example: `v1.3.0`
+| Event | What happens |
+| ----- | ------------ |
+| Tag `vX.Y.Z` pushed | `release.yml` runs the tests, then GoReleaser builds the binaries, SBOMs and checksums into a **draft** GitHub release and pushes the image `ghcr.io/bluewave-labs/capture:vX.Y.Z` |
+| Draft release published | The install scripts (`deployment/*/install.sh`, `install.ps1`) pick it up, since they download the latest published release. `release-latest.yml` points the image's `latest` tag at `vX.Y.Z`, which Docker users and the Helm chart (default tag `latest`) follow |
 
-1. Create a new tag for the release version.
+Nothing reaches users through `latest` until the release is published. Still,
+push the tag only when the release notes are final, and publish soon after.
 
-    ```shell
-    git tag <version>
-    ```
+## Steps
 
-2. Push the tag to the remote repository.
-
-    ```shell
-    git push origin <version>
-    ```
-
-3. [Create a PR](https://github.com/bluewave-labs/capture/compare/main...develop) for merging `develop` into `main`. Merge it with 'Merge Commit' option, do not squash or rebase.
-
-4. Update the `CHANGELOG.md` file with the new version details.
-
-5. Commit the changes to the `CHANGELOG.md` file.
+1. **Check develop is ready.** Everything meant for the release is merged and CI on
+   `develop` is green. Locally, with the Go version from `go.mod`:
 
     ```shell
-    git switch -c docs/changelog-<version>
-    git add CHANGELOG.md
-    git commit -m "docs(changelog): Update CHANGELOG for version <version>"
-    git push origin docs/changelog-<version>
+    go build ./... && go vet ./...
+    go test -count=1 -race ./...
+    go run golang.org/x/vuln/cmd/govulncheck@v1.10.0 -format json ./... > vuln.json
+    .github/scripts/govulncheck-gate.sh vuln.json
     ```
 
-6. Create a PR for the `docs/changelog-<version>` branch to merge into `develop`.
+2. **Write the release notes** in the format below. Start from GitHub's generated
+   notes, which give the merged PR list, new contributors and the compare link:
 
-7. Close the milestone for the current version.
+    ```shell
+    gh api -X POST repos/bluewave-labs/capture/releases/generate-notes \
+      -f tag_name=vX.Y.Z -f target_commitish=develop -f previous_tag_name=vPREV \
+      --jq .body
+    ```
+
+3. **Update `CHANGELOG.md`** with the same notes under `## X.Y.Z (YYYY-MM-DD)`,
+   newest first. Open a PR from `docs/changelog-vX.Y.Z` into `develop` and merge it.
+
+4. **Merge `develop` into `main`.** Open a PR titled `Develop -> Main | vX.Y.Z Release`
+   and merge it with **Create a merge commit**. Do not squash or rebase it, or `main`
+   and `develop` diverge.
+
+5. **Tag the release** on the `develop` commit that was merged into `main` (the
+   changelog merge):
+
+    ```shell
+    git fetch origin
+    git tag vX.Y.Z origin/develop
+    git push origin vX.Y.Z
+    ```
+
+6. **Check the draft** once the `release` workflow finishes: 17 assets (8 archives,
+   8 SBOMs, `checksums.txt`), and `capture --version` from one archive shows the new
+   version. Paste the release notes into the draft.
+
+7. **Publish the draft.** Then confirm the `release-latest` workflow ran and that
+   `docker buildx imagetools inspect ghcr.io/bluewave-labs/capture:latest` shows the
+   same digest as `:vX.Y.Z`.
+
+8. **Tell Checkmate.** If the Checkmate docs or UI mention a Capture version, open
+   an issue or PR there.
+
+## Release notes format
+
+Write for the people running Capture: what they get, what changed for them, and
+what they have to do. Use the same layout as the Checkmate release notes.
+
+```markdown
+## What's Changed
+
+**<The one to three changes that matter most>.** <One or two sentences on what
+this means for users and which Checkmate version it pairs with, if any.>
+
+  ### Breaking changes
+
+  - <What changed, what breaks and what to do. Name the endpoint and field>
+
+  ### Features
+
+  - <What users can now do or see>
+
+  ### Fixes
+
+  - <The problem users saw, and what happens now>
+
+  ### Upgrade notes
+
+  - <New or changed environment variables, defaults, install-script or service
+    changes. Say "No new environment variables" when there are none>
+
+  ### Maintenance
+
+  - <Dependencies, Go version, CI, tests and docs, grouped>
+
+## New Contributors
+* @login made their first contribution in https://github.com/bluewave-labs/capture/pull/N
+
+**Full Changelog**: https://github.com/bluewave-labs/capture/compare/vPREV...vX.Y.Z
+```
+
+- No commit hashes, PR numbers or commit prefixes (`feat:`, `fix:`) in the bullets.
+- One change per bullet, sentence case, no trailing period.
+- Leave out empty sections, except "Upgrade notes". "Breaking changes" comes first
+  when there is one, and the opening sentence mentions it.
+- Say which platform a change applies to when it is not all of them ("Linux only",
+  "Windows service").
 
 ## Troubleshooting
 
-If you encounter issues during the release process, consider following these steps:
-
-1. Check the GitHub Actions logs for any errors or warnings.
-2. Ensure that all required environment variables are set correctly.
-3. Verify that the version tag follows the correct format (e.g., `v1.0.0`).
-4. Try to re-run the release workflow if it fails due to transient issues.
-5. If the release process fails, you can revert the changes by deleting the tag and branch created during the release.
+- **The `release` workflow fails before GoReleaser runs** (for example in tests):
+  nothing was published. Fix it on `develop`, then delete and push the tag again:
 
     ```shell
-    git tag -d <version>
-    git push --delete origin <version>
+    git tag -d vX.Y.Z
+    git push --delete origin vX.Y.Z
     ```
 
-## Conclusion
-
-Following these steps will help you create a new release for Capture successfully. Ensure that you have the necessary permissions to push tags and branches to the repository. If you have any questions or need assistance, feel free to reach out to the maintainers.
+- **It fails after the image was pushed:** prefer releasing a new patch version
+  over re-tagging, so one version never names two different builds.
+- **GoReleaser fails because the release already exists:** delete the draft
+  release, then re-run the workflow.
+- **`latest` did not move:** run the `release-latest` workflow by hand with the
+  release tag. It only moves `latest` to the newest published release.

@@ -37,8 +37,9 @@ kos:
     platforms:
       - linux/amd64
       - linux/arm64
+    # Only the version tag is pushed here, while the GitHub release is still a draft.
+    # .github/workflows/release-latest.yml moves "latest" once the release is published.
     tags:
-      - latest
       - '{{.Tag}}'
     main: ./cmd/capture
     flags:
