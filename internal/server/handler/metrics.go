@@ -65,6 +65,11 @@ func (h *MetricsHandler) MetricsNet(c *gin.Context) {
 	h.handleResponse(c, netMetrics, netErrs)
 }
 
+func (h *MetricsHandler) MetricsRaid(c *gin.Context) {
+	raidMetrics, raidErrs := metric.GetRaidMetrics()
+	h.handleResponse(c, raidMetrics, raidErrs)
+}
+
 func (h *MetricsHandler) MetricsDocker(c *gin.Context) {
 	all := c.Query("all") == "true"
 
