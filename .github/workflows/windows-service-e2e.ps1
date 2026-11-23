@@ -94,9 +94,10 @@ function Show-Events {
 
 # A startup error must stop the service with Capture's own exit code, log an error event,
 # and not be restarted by the failure actions.
-function Test-StartFailure([string]$expectedMessage) {
+# A bind error is retried for 60s before the start fails, so that scenario passes a longer wait.
+function Test-StartFailure([string]$expectedMessage, [int]$stopSeconds = 20) {
     Start-Capture
-    $stopped = Wait-State 'Stopped' 20
+    $stopped = Wait-State 'Stopped' $stopSeconds
     Check 'service stops instead of hanging in Start pending' ($stopped -ge 0) "(after ${stopped}s)"
     $codes = Get-ExitCodes
     Check 'reports a service-specific error' ($codes.Win32 -eq $serviceSpecificError -and $codes.Specific -eq 1) "(WIN32_EXIT_CODE=$($codes.Win32), SERVICE_EXIT_CODE=$($codes.Specific))"
@@ -144,8 +145,29 @@ Section 'port already in use'
 $listener = [Net.Sockets.TcpListener]::Create($port)
 $listener.Start()
 Install-Capture $good
-Test-StartFailure 'could not start: listen tcp .*bind'
+Test-StartFailure 'could not start: listen tcp .*bind' 90
+Check 'logs that it retried the bind' ((Get-CaptureEvents | Where-Object { $_.Message -match 'will retry' }).Count -ge 1)
 $listener.Stop()
+Remove-Capture
+
+Section 'port freed while retrying'
+# At boot the LISTEN address or the port may not be available yet; Capture must wait for it
+# instead of failing for good.
+$listener = [Net.Sockets.TcpListener]::Create($port)
+$listener.Start()
+Install-Capture $good
+Start-Capture
+Start-Sleep 5
+Check 'stays Start pending while the port is taken' ("$((Get-Service $svc).Status)" -eq 'StartPending') "(status $((Get-Service $svc).Status))"
+$listener.Stop()
+$running = Wait-State 'Running' 30
+Check 'reaches Running once the port is free' ($running -ge 0) "(after ${running}s)"
+Check '/health returns 200' ((Get-Status '/health') -eq 200)
+Check 'logs no error event' (@(Get-CaptureEvents | Where-Object { $_.LevelDisplayName -eq 'Error' }).Count -eq 0)
+& sc.exe stop $svc | Out-Null
+$stopped = Wait-State 'Stopped' 20
+Check 'stops cleanly' ($stopped -ge 0) "(after ${stopped}s)"
+Show-Events
 Remove-Capture
 
 Section 'API_SECRET missing'

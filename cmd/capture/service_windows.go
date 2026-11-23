@@ -3,9 +3,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"math"
+	"net"
 	"strings"
 	"time"
 
@@ -31,6 +33,14 @@ const exitCodeStartFailed = 1
 // startWaitHint tells the Service Control Manager how long starting may take
 const startWaitHint = 10 * time.Second
 
+// A failure to bind the listen address is retried for bindRetryWindow before the start fails.
+// An automatic service can start at boot before the network is ready, for example before DHCP
+// has assigned the LISTEN address, and another process may hold the port for a moment.
+const (
+	bindRetryWindow   = 60 * time.Second
+	bindRetryInterval = 2 * time.Second
+)
+
 // isWindowsService reports whether Capture was started by the Windows Service Control Manager.
 func isWindowsService() bool {
 	isService, err := svc.IsWindowsService()
@@ -50,7 +60,13 @@ func runService(start func() (*server.Server, error), shutdownTimeout time.Durat
 	log.SetFlags(0)
 	log.SetOutput(elog)
 
-	service := &captureService{start: start, shutdownTimeout: shutdownTimeout, elog: elog}
+	service := &captureService{
+		start:             start,
+		shutdownTimeout:   shutdownTimeout,
+		bindRetryWindow:   bindRetryWindow,
+		bindRetryInterval: bindRetryInterval,
+		elog:              elog,
+	}
 	// The name is ignored for services that run in their own process
 	if err := svc.Run(eventSource, service); err != nil {
 		elog.logError(fmt.Sprintf("Capture could not run as a Windows service: %v", err))
@@ -64,17 +80,22 @@ func runService(start func() (*server.Server, error), shutdownTimeout time.Durat
 
 // captureService implements svc.Handler
 type captureService struct {
-	start           func() (*server.Server, error)
-	shutdownTimeout time.Duration
-	elog            eventLog
-	startFailed     bool
+	start             func() (*server.Server, error)
+	shutdownTimeout   time.Duration
+	bindRetryWindow   time.Duration
+	bindRetryInterval time.Duration
+	elog              eventLog
+	startFailed       bool
 }
 
 func (s *captureService) Execute(_ []string, requests <-chan svc.ChangeRequest, status chan<- svc.Status) (bool, uint32) {
 	status <- svc.Status{State: svc.StartPending, WaitHint: durationMillis(startWaitHint)}
 
 	// Running is reported only once the configuration is valid and the port is bound
-	srv, err := s.start()
+	srv, stopRequested, err := s.startWithRetry(requests, status)
+	if stopRequested {
+		return false, 0
+	}
 	if err != nil {
 		s.startFailed = true
 		s.elog.logError(fmt.Sprintf("Capture could not start: %v", err))
@@ -95,6 +116,61 @@ func (s *captureService) Execute(_ []string, requests <-chan svc.ChangeRequest, 
 		}
 	}
 	return false, 0
+}
+
+// startWithRetry starts the server. A configuration error fails at once, while a bind error is
+// retried every bindRetryInterval until bindRetryWindow has passed. While it retries, the service
+// stays Start pending, reports progress so Windows keeps waiting, and accepts stop, in which case
+// stopRequested is true.
+func (s *captureService) startWithRetry(requests <-chan svc.ChangeRequest, status chan<- svc.Status) (srv *server.Server, stopRequested bool, err error) {
+	deadline := time.Now().Add(s.bindRetryWindow)
+	pending := svc.Status{
+		State:    svc.StartPending,
+		Accepts:  svc.AcceptStop | svc.AcceptShutdown,
+		WaitHint: durationMillis(s.bindRetryInterval + startWaitHint),
+	}
+	for attempt := uint32(1); ; attempt++ {
+		srv, err = s.start()
+		if err == nil || !isBindError(err) || !time.Now().Before(deadline) {
+			return srv, false, err
+		}
+		if attempt == 1 {
+			log.Printf("Capture could not bind its listen address and will retry for up to %s: %v", s.bindRetryWindow, err)
+		}
+		pending.CheckPoint = attempt
+		status <- pending
+		if s.waitOrStop(requests, status) {
+			return nil, true, nil
+		}
+	}
+}
+
+// waitOrStop waits bindRetryInterval while answering the Service Control Manager.
+// It returns true if a stop or shutdown arrived.
+func (s *captureService) waitOrStop(requests <-chan svc.ChangeRequest, status chan<- svc.Status) bool {
+	timer := time.NewTimer(s.bindRetryInterval)
+	defer timer.Stop()
+	for {
+		select {
+		case <-timer.C:
+			return false
+		case request := <-requests:
+			switch request.Cmd {
+			case svc.Interrogate:
+				status <- request.CurrentStatus
+			case svc.Stop, svc.Shutdown:
+				status <- svc.Status{State: svc.StopPending}
+				return true
+			}
+		}
+	}
+}
+
+// isBindError reports whether err came from binding the listen address, as opposed to
+// invalid configuration
+func isBindError(err error) bool {
+	var opErr *net.OpError
+	return errors.As(err, &opErr) && opErr.Op == "listen"
 }
 
 // durationMillis converts a duration to the milliseconds the Service Control Manager expects,
