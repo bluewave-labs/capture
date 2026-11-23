@@ -52,6 +52,9 @@ func collectRaidMetrics(root string) (MetricsSlice, []CustomErr) {
 	for _, mdDir := range mdDirs {
 		device := "/dev/" + filepath.Base(filepath.Dir(mdDir))
 		array, err := readRaidArray(device, mdDir)
+		if errors.Is(err, errNotAnArray) {
+			continue
+		}
 		if err != nil {
 			raidErrs = append(raidErrs, CustomErr{
 				Metric: []string{"raid"},
@@ -64,6 +67,9 @@ func collectRaidMetrics(root string) (MetricsSlice, []CustomErr) {
 	return arrays, raidErrs
 }
 
+// errNotAnArray marks md devices that exist in sysfs but are not arrays worth reporting
+var errNotAnArray = errors.New("not an md array")
+
 // readRaidArray reads one array from its sysfs md directory.
 // Only array_state is required; the other files do not exist for every level or state.
 func readRaidArray(device, mdDir string) (*RaidData, error) {
@@ -71,9 +77,17 @@ func readRaidArray(device, mdDir string) (*RaidData, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Opening /dev/mdN (mdadm --detail, blkid probing) creates an empty md device whose state is "clear"
+	if state == "clear" {
+		return nil, errNotAnArray
+	}
 
 	array := &RaidData{Device: device, State: state, Members: make([]RaidMember, 0)}
 	array.Level, _ = readSysfsValue(filepath.Join(mdDir, "level"))
+	metadata, _ := readSysfsValue(filepath.Join(mdDir, "metadata_version"))
+	if isRaidContainer(array.Level, metadata) {
+		return nil, errNotAnArray
+	}
 	array.RaidDisks = readSysfsInt(filepath.Join(mdDir, "raid_disks"))
 	array.DegradedDisks = readSysfsInt(filepath.Join(mdDir, "degraded"))
 	if action, err := readSysfsValue(filepath.Join(mdDir, "sync_action")); err == nil {
@@ -94,11 +108,28 @@ func readRaidArray(device, mdDir string) (*RaidData, error) {
 			continue
 		}
 		array.Members = append(array.Members, RaidMember{
-			Device: "/dev/" + strings.TrimPrefix(filepath.Base(memberDir), "dev-"),
+			Device: memberDevicePath(filepath.Base(memberDir)),
 			State:  memberState,
 		})
 	}
 	return array, nil
+}
+
+// isRaidContainer reports whether an md device is an external-metadata container (Intel RST/IMSM, DDF).
+// A container only groups disks and is always "inactive"; the arrays inside it are separate md devices
+// whose metadata_version names the container, e.g. "external:/md127/0".
+func isRaidContainer(level, metadataVersion string) bool {
+	if level == "container" {
+		return true
+	}
+	external, found := strings.CutPrefix(metadataVersion, "external:")
+	return found && !strings.HasPrefix(external, "/") && !strings.HasPrefix(external, "-")
+}
+
+// memberDevicePath turns a sysfs member directory name such as "dev-sda1" into a device path.
+// The kernel writes "/" in device names as "!", e.g. "dev-cciss!c0d0" for /dev/cciss/c0d0.
+func memberDevicePath(dirName string) string {
+	return "/dev/" + strings.ReplaceAll(strings.TrimPrefix(dirName, "dev-"), "!", "/")
 }
 
 // parseSyncCompleted converts sync_completed ("done / total" in sectors, or "none") to a 0-1 fraction

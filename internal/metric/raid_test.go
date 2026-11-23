@@ -112,6 +112,73 @@ func TestCollectRaidMetricsInactiveArray(t *testing.T) {
 	}
 }
 
+func TestCollectRaidMetricsSkipsNonArrays(t *testing.T) {
+	root := t.TempDir()
+	writeSysfs(t, root, map[string]string{
+		// Empty md device left behind by opening /dev/md0
+		"md0/md/array_state": "clear",
+		"md0/md/level":       "",
+		"md0/md/raid_disks":  "0",
+		// Intel RST (IMSM) container and the mirror inside it
+		"md127/md/array_state":      "inactive",
+		"md127/md/level":            "container",
+		"md127/md/metadata_version": "external:imsm",
+		"md127/md/dev-sda/state":    "in_sync",
+		"md127/md/dev-sdb/state":    "in_sync",
+		"md126/md/array_state":      "clean",
+		"md126/md/level":            "raid1",
+		"md126/md/metadata_version": "external:/md127/0",
+		"md126/md/raid_disks":       "2",
+		"md126/md/dev-sda/state":    "in_sync",
+		"md126/md/dev-sdb/state":    "in_sync",
+	})
+
+	got, errs := collectRaidMetrics(root)
+	if len(errs) != 0 {
+		t.Fatalf("collectRaidMetrics() errors = %+v", errs)
+	}
+	expected := []RaidData{{
+		Device: "/dev/md126", Level: "raid1", State: "clean", RaidDisks: intPtr(2),
+		Members: []RaidMember{{Device: "/dev/sda", State: "in_sync"}, {Device: "/dev/sdb", State: "in_sync"}},
+	}}
+	if arrays := raidArrays(got); !reflect.DeepEqual(arrays, expected) {
+		t.Errorf("collectRaidMetrics() = %+v, expected %+v", arrays, expected)
+	}
+}
+
+func TestIsRaidContainer(t *testing.T) {
+	tests := []struct {
+		level, metadata string
+		expected        bool
+	}{
+		{"container", "", true},
+		{"", "external:imsm", true},
+		{"", "external:ddf", true},
+		{"raid1", "external:/md127/0", false},
+		{"raid1", "external:-md127/0", false},
+		{"raid1", "1.2", false},
+		{"", "", false},
+	}
+	for _, tt := range tests {
+		if got := isRaidContainer(tt.level, tt.metadata); got != tt.expected {
+			t.Errorf("isRaidContainer(%q, %q) = %v, expected %v", tt.level, tt.metadata, got, tt.expected)
+		}
+	}
+}
+
+func TestMemberDevicePath(t *testing.T) {
+	tests := map[string]string{
+		"dev-sda1":       "/dev/sda1",
+		"dev-nvme0n1p2":  "/dev/nvme0n1p2",
+		"dev-cciss!c0d0": "/dev/cciss/c0d0",
+	}
+	for dirName, expected := range tests {
+		if got := memberDevicePath(dirName); got != expected {
+			t.Errorf("memberDevicePath(%q) = %q, expected %q", dirName, got, expected)
+		}
+	}
+}
+
 func TestCollectRaidMetricsNoArrays(t *testing.T) {
 	got, errs := collectRaidMetrics(t.TempDir())
 	if len(errs) != 0 || got == nil || len(got) != 0 {

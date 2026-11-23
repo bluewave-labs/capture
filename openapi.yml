@@ -623,6 +623,7 @@ components:
       properties:
         data:
           type: array
+          description: Configured md arrays. Empty md devices (state "clear") and external-metadata containers (Intel RST/IMSM, DDF) are left out; the arrays inside a container are listed.
           items:
             $ref: '#/components/schemas/RaidData'
         capture:
