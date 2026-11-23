@@ -8,30 +8,30 @@ on:
       - 'v*'
 
 permissions:
-      contents: write
-      packages: write
+  contents: write
+  packages: write
 
 jobs:
   release:
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
-      -
-        name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      -
-        name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Set up Go
+        uses: actions/setup-go@v7
         with:
           go-version-file: 'go.mod'
-      - 
-        name: Install Syft
-        run: |
-          curl -sSfL https://get.anchore.io/syft | sudo sh -s -- -b /usr/local/bin
-      -
-        name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
+      # A tag can point at any commit, so do not publish one that fails its tests
+      - name: Run tests
+        run: go test -count=1 -race -timeout 3m ./...
+      # GoReleaser calls syft to generate the SBOMs
+      - name: Install Syft
+        uses: anchore/sbom-action/download-syft@v0
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
           version: '~> v2'

@@ -3,6 +3,8 @@ package metric
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"sync"
 	"time"
 
 	"github.com/docker/docker/api/types/container"
@@ -79,9 +81,27 @@ func GetDockerMetrics(all bool) (MetricsSlice, []CustomErr) {
 		})
 	}
 
-	for _, container := range containers {
-		metric, customErr := processContainer(ctx, cli, container)
-		if customErr.Error != "" {
+	results := make([]ContainerMetrics, len(containers))
+	perContainerErrors := make([]CustomErr, len(containers))
+	var waitGroup sync.WaitGroup
+	for i, currentContainer := range containers {
+		waitGroup.Add(1)
+		go func(i int, current container.Summary) {
+			defer waitGroup.Done()
+			defer func() {
+				if recovered := recover(); recovered != nil {
+					perContainerErrors[i] = CustomErr{Metric: []string{"docker.container"}, Error: fmt.Sprintf("panic: %v", recovered)}
+				}
+			}()
+
+			results[i], perContainerErrors[i] = processContainer(ctx, cli, current)
+		}(i, currentContainer)
+	}
+	waitGroup.Wait()
+
+	for i, metric := range results {
+		if customErr := perContainerErrors[i]; customErr.Error != "" {
+			customErr.Error = fmt.Sprintf("container %s (%s): %s", getContainerName(containers[i].Names), containers[i].ID, customErr.Error)
 			containerErrors = append(containerErrors, customErr)
 			continue
 		}

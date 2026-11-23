@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -21,18 +22,43 @@ type Server struct {
 	MetaData *handler.CaptureMeta // Metadata can be used to store additional information about the server
 }
 
-// Serve function starts the HTTP server and listens for incoming requests concurrently.
-// It uses a goroutine to handle the server's ListenAndServe method, allowing the main thread to continue executing.
-func (s *Server) Serve() {
+// Serve binds the listen address, then serves requests in the background.
+// A bind failure, such as the port already being in use, is returned rather than
+// logged later, so the caller knows whether the server actually started.
+// On success s.Addr holds the bound address, which matters when the port is 0.
+func (s *Server) Serve() error {
+	configured := s.Addr
+	listener, err := net.Listen("tcp", configured)
+	if err != nil {
+		return err
+	}
+	s.Addr = listener.Addr().String()
+
 	go func() {
-		if err := s.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
+		if err := s.Server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("server error: %v", err)
 		}
 	}()
-	log.Printf("server started on %s", s.Addr)
+	log.Printf("server started on %s", listenAddrForLog(configured, s.Addr))
+	return nil
 }
 
-// GracefulShutdown gracefully shuts down the server with a timeout.
+// listenAddrForLog combines the configured host with the bound port. The bound address alone
+// can mislead: Go binds 0.0.0.0 as the dual-stack wildcard [::], which reads as IPv6 only.
+// The bound port still matters when the configured port is 0.
+func listenAddrForLog(configured, bound string) string {
+	host, _, err := net.SplitHostPort(configured)
+	if err != nil {
+		return bound
+	}
+	_, port, err := net.SplitHostPort(bound)
+	if err != nil {
+		return bound
+	}
+	return net.JoinHostPort(host, port)
+}
+
+// GracefulShutdown waits for an interrupt or terminate signal, then stops the server.
 func (s *Server) GracefulShutdown(timeout time.Duration) {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -40,12 +66,18 @@ func (s *Server) GracefulShutdown(timeout time.Duration) {
 	sig := <-quit
 	log.Printf("signal received: %v", sig)
 
+	s.Stop(timeout)
+}
+
+// Stop gracefully shuts down the server, closing any connections still open after the timeout.
+func (s *Server) Stop(timeout time.Duration) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	log.Println("shutting down server...")
 	if err := s.Shutdown(ctx); err != nil {
 		log.Printf("server shutdown error: %v", err)
+		_ = s.Close()
 	} else {
 		log.Println("server shutdown gracefully")
 	}
@@ -54,6 +86,8 @@ func (s *Server) GracefulShutdown(timeout time.Duration) {
 func InitializeHandler(config *config.Config, metadata *handler.CaptureMeta) http.Handler {
 	// Initialize the Gin with default middlewares
 	r := gin.Default()
+	// Return 405 instead of 404 for unsupported methods on known routes
+	r.HandleMethodNotAllowed = true
 	metadata.Mode = gin.Mode()
 	if gin.Mode() == gin.ReleaseMode {
 		println("running in Release Mode")
@@ -77,6 +111,7 @@ func InitializeHandler(config *config.Config, metadata *handler.CaptureMeta) htt
 	apiV1.GET("/metrics/host", metricsHandler.MetricsHost)
 	apiV1.GET("/metrics/smart", metricsHandler.SmartMetrics)
 	apiV1.GET("/metrics/net", metricsHandler.MetricsNet)
+	apiV1.GET("/metrics/raid", metricsHandler.MetricsRaid)
 	apiV1.GET("/metrics/docker", metricsHandler.MetricsDocker)
 
 	return r.Handler()
@@ -88,7 +123,7 @@ func NewServer(config *config.Config, handler http.Handler, metadata *handler.Ca
 	}
 	return &Server{
 		Server: &http.Server{
-			Addr:              "0.0.0.0:" + config.Port,
+			Addr:              net.JoinHostPort(config.Listen, config.Port),
 			Handler:           handler,
 			ReadHeaderTimeout: 5 * time.Second,
 		},

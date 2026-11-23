@@ -1,0 +1,103 @@
+name: packaging
+
+# Checks what users install: release artifacts, container image, install scripts,
+# Helm chart and the workflows themselves. Runs only when those files change; the
+# release workflow itself only runs on a tag, too late to find a broken config.
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - .goreleaser.yml
+      - Dockerfile
+      - deployment/**
+      - .github/workflows/**
+      - .github/scripts/**
+      - go.mod
+      - go.sum
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  ACTIONLINT_VERSION: v1.7.12
+
+jobs:
+  release-dry-run:
+    name: release dry run
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      # The ko config needs a repository even for check; ko.local keeps images in the local daemon
+      KO_DOCKER_REPO: ko.local
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: 'go.mod'
+      - name: Install Syft
+        uses: anchore/sbom-action/download-syft@v0
+      - name: Check GoReleaser configuration
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: check
+      # Builds every release target, the ko images and the SBOMs, without publishing
+      - name: Build a snapshot release
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --snapshot --clean
+      - name: Smoke test the linux/amd64 binary
+        run: |
+          binary=$(find dist -path '*linux_amd64*' -name capture -type f | head -n 1)
+          test -n "${binary}" || { echo "linux/amd64 binary not found in dist/"; ls -R dist; exit 1; }
+          "${binary}" --version
+          API_SECRET=ci "${binary}" > capture.log 2>&1 &
+          for _ in $(seq 1 20); do
+            if curl -sf http://127.0.0.1:59232/health > /dev/null; then echo "healthy"; exit 0; fi
+            sleep 1
+          done
+          echo "release binary did not become healthy"; cat capture.log; exit 1
+
+  deployment:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: 'go.mod'
+      # shellcheck is preinstalled on the runner, so actionlint also checks run: scripts
+      - name: Lint workflows
+        run: go run "github.com/rhysd/actionlint/cmd/actionlint@${ACTIONLINT_VERSION}"
+      - name: Lint install scripts
+        run: shellcheck deployment/linux/install.sh deployment/macos/install.sh .github/scripts/*.sh
+      - name: Lint Helm chart
+        run: |
+          helm lint deployment/helm/capture
+          helm template capture deployment/helm/capture > /dev/null
+      - name: Build and run the Dockerfile image
+        run: |
+          docker build -t capture:ci .
+          docker run -d --name capture -e API_SECRET=ci -p 59232:59232 capture:ci
+          for _ in $(seq 1 20); do
+            if curl -sf http://127.0.0.1:59232/health > /dev/null; then echo "healthy"; exit 0; fi
+            sleep 1
+          done
+          echo "container did not become healthy"; docker logs capture; exit 1

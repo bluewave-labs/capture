@@ -1,37 +1,56 @@
 APP_NAME := "capture"
 
-format:
-    @gofmt -w ./
+# Keep tool versions in sync with .github/workflows/go.yml
+STATICCHECK := "honnef.co/go/tools/cmd/staticcheck@v0.8.2"
+GOLANGCI_LINT := "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0"
+GOVULNCHECK := "golang.org/x/vuln/cmd/govulncheck@v1.10.0"
 
+format:
+	@go run {{GOLANGCI_LINT}} fmt
+
+# Fails when any file is not formatted, like CI
 format-check:
-    @gofmt -l ./
+	@go run {{GOLANGCI_LINT}} fmt --diff
 
 unit-test:
 	@go test \
 		-v \
-		-timeout 30s \
+		-timeout 3m \
 		./test/ \
 		./internal/...
 
 integration-test:
 	@go test \
 		-v \
-		-timeout 30s \
+		-timeout 3m \
 		./test/integration/...
 
+# All tests, with the race detector, like CI
 test:
 	@go test \
+		-race \
 		-v \
-		-timeout 30s \
-		./test/...
+		-timeout 3m \
+		./...
 
+# Same checks as the CI check job, for every target OS
 lint:
-	go vet ./...
-	go run honnef.co/go/tools/cmd/staticcheck@latest -checks=all,-ST1000,-U1000 ./...
-	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run
+	go mod tidy -diff
+	@for goos in linux darwin windows; do \
+		echo "GOOS=$goos"; \
+		GOOS=$goos go vet ./... && \
+		GOOS=$goos go run {{STATICCHECK}} -checks=all,-ST1000,-U1000 ./... && \
+		GOOS=$goos go run {{GOLANGCI_LINT}} run || exit 1; \
+	done
+	GOOS=linux GOARCH=arm GOARM=6 go vet ./...
+
+# Fails when the code reaches a vulnerability that has a fix
+vuln:
+	@go run {{GOVULNCHECK}} -format json ./... > .govulncheck.json
+	@./.github/scripts/govulncheck-gate.sh .govulncheck.json; status=$?; rm -f .govulncheck.json; exit $status
 
 build:
-    @go build -o dist/capture ./cmd/capture/
+	@go build -o dist/capture ./cmd/capture/
 
 build-all: build-linux build-macos build-windows
 

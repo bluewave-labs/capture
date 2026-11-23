@@ -15,11 +15,14 @@
 .PARAMETER Port
     Port the Capture server listens on. Defaults to: 59232
 
+.PARAMETER Listen
+    IP address the Capture server binds to, without a port or IPv6 brackets. Defaults to: 0.0.0.0
+
 .EXAMPLE
     .\install.ps1
 
 .EXAMPLE
-    .\install.ps1 -APISecret "my-secret" -Port 8080
+    .\install.ps1 -APISecret "my-secret" -Port 8080 -Listen "127.0.0.1"
 
 .EXAMPLE
     .\install.ps1 -InstallDir "C:\capture" -ServiceName "capture-agent" -APISecret "my-secret"
@@ -29,7 +32,8 @@ param(
     [string] $InstallDir  = 'C:\Program Files\Capture',
     [string] $ServiceName = 'capture',
     [string] $APISecret   = '',
-    [int]    $Port        = 59232
+    [int]    $Port        = 59232,
+    [string] $Listen      = '0.0.0.0'
 )
 
 Set-StrictMode -Version Latest
@@ -122,17 +126,33 @@ if ($existingService) {
 Set-ItemProperty `
     -Path  "HKLM:\SYSTEM\CurrentControlSet\Services\$ServiceName" `
     -Name  'Environment' `
-    -Value @("API_SECRET=$APISecret", "PORT=$Port", "GIN_MODE=release") `
+    -Value @("API_SECRET=$APISecret", "PORT=$Port", "LISTEN=$Listen", "GIN_MODE=release") `
     -Type  MultiString
 
-# Start or restart the service (Restart-Service starts it if stopped, restarts if running)
-Restart-Service -Name $ServiceName -Force
+# Restart the service automatically if it crashes (after 5s, 10s, then every 30s).
+# A configuration error stops the service with an error code instead, which is not retried.
+# sc.exe is a native command, so its exit code is checked explicitly.
+& sc.exe failure $ServiceName reset= 86400 actions= restart/5000/restart/10000/restart/30000 | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning "Could not set automatic restart for service '$ServiceName' (sc.exe exit code $LASTEXITCODE)."
+}
+
+# Start or restart the service (Restart-Service starts it if stopped, restarts if running).
+# Write-Host is used for the error because Write-Error throws under ErrorActionPreference Stop.
+try {
+    Restart-Service -Name $ServiceName -Force
+} catch {
+    Write-Host "Service '$ServiceName' failed to start: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Check Event Viewer > Windows Logs > Application for errors from source 'capture'." -ForegroundColor Red
+    exit 1
+}
 Write-Host "Service status: $((Get-Service -Name $ServiceName).Status)"
 
 Write-Host ""
 Write-Host "Capture $version installed successfully."
 Write-Host "  Install directory : $InstallDir"
 Write-Host "  Service name      : $ServiceName"
+Write-Host "  Listen address    : $Listen"
 Write-Host "  Port              : $Port"
 Write-Host ""
 Write-Host "  Get-Service $ServiceName"
@@ -140,4 +160,12 @@ Write-Host "  Stop-Service $ServiceName"
 Write-Host "  Start-Service $ServiceName"
 Write-Host "  Restart-Service $ServiceName"
 Write-Host ""
-Write-Host "  Invoke-RestMethod http://localhost:$Port/health"
+$healthHost = $Listen
+if ([string]::IsNullOrEmpty($healthHost) -or $healthHost -eq '0.0.0.0') {
+    $healthHost = '127.0.0.1'
+} elseif ($healthHost -eq '::') {
+    $healthHost = '[::1]'
+} elseif ($healthHost.Contains(':')) {
+    $healthHost = "[$healthHost]"
+}
+Write-Host "  Invoke-RestMethod http://${healthHost}:$Port/health"

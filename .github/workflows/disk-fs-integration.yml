@@ -9,9 +9,11 @@ on:
     paths:
         # Only run this workflow when files related to the disk filesystem integration tests are changed
       - .github/workflows/disk-fs-integration.yml
-      - internal/metric/disk.go
-      - test/integration/disk_fs_test.go
-      - test/integration/disk_env.go
+      - internal/metric/disk*.go
+      - internal/metric/raid*.go
+      - internal/system/**
+      - test/integration/disk_*.go
+      - test/integration/raid_test.go
       - test/helpers.go
       - go.mod
       - go.sum
@@ -31,32 +33,32 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
-          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
       - name: Install filesystem tools
         run: |
           sudo apt-get update
-          sudo apt install -y \
+          sudo apt-get install -y --no-install-recommends \
             e2fsprogs \
             xfsprogs \
             btrfs-progs \
             zfsutils-linux \
-            lvm2
+            lvm2 \
+            mdadm
 
       - name: Prepare kernel modules and loop devices
         run: |
           sudo modprobe loop || true
 
-      - name: Run disk filesystem integration test as root
+      - name: Run disk filesystem and RAID integration tests as root
         run: |
           GO_BIN="$(command -v go)"
           echo "Using Go binary: ${GO_BIN}"
-          sudo "${GO_BIN}" test -v -count=1 -run TestDiskFilesystemMetrics ./test/integration/
+          sudo "${GO_BIN}" test -v -count=1 -run 'TestDiskFilesystemMetrics|TestRaidMetrics' ./test/integration/
