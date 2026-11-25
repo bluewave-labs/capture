@@ -26,8 +26,8 @@ jobs:
     runs-on: windows-2025
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - name: Build
@@ -38,7 +38,7 @@ jobs:
         run: ./.github/workflows/windows-service-e2e.ps1 -Binary "$env:RUNNER_TEMP\capture.exe"
       - name: Upload binary for manual testing
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: capture-windows-amd64
           path: ${{ runner.temp }}\capture.exe
